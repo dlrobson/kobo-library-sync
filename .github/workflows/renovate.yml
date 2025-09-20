@@ -5,17 +5,19 @@ on:
     # Run hourly
     - cron: '0 * * * *'
   workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug logging'
+        required: false
+        default: false
+        type: boolean
 
 env:
-  LOG_LEVEL: debug
+  LOG_LEVEL: ${{ github.event.inputs.debug == 'true' && 'debug' || 'info' }}
 
 jobs:
   renovate:
     runs-on: ubuntu-latest
-    permissions:
-      # Grants permission to push branches
-      contents: write
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,4 +25,4 @@ jobs:
       - name: Self-hosted Renovate
         uses: renovatebot/github-action@v43.0.12
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RENOVATE_TOKEN }}
