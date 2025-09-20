@@ -1,5 +1,5 @@
 [package]
-name = "starter"
+name = "kobo-server"
 
 authors.workspace = true
 categories.workspace = true
@@ -15,5 +15,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+axum = "0.8.4"
+tokio = { version = "1.47.1", features = ["rt-multi-thread"] }
 
 [dev-dependencies]

@@ -14,9 +14,6 @@ version.workspace = true
 [lints]
 workspace = true
 
-[dependencies]
-starter = { version = "0.1.0", path = "../crates/starter" }
-
 [[example]]
 name = "starter"
 path = "starter.rs"
