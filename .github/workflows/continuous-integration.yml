@@ -1,0 +1,145 @@
+name: Rust Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  COVERAGE_THRESHOLD: 70
+  RUST_LOG: debug
+  RUST_BACKTRACE: full
+  RUST_VERSION: 1.84.0
+
+# This stops any running jobs when a new commit is pushed
+# Reference: https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            target/
+          key: build-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            build-
+
+      - name: Run tests
+        run: cargo test --locked --profile release
+
+
+  quality-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            target/
+          key: quality-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            quality-
+
+      - name: Check Rust formatting
+        if: ${{ !cancelled() }}
+        run: cargo fmt --check
+
+      - name: Check for clippy warnings
+        if: ${{ !cancelled() }}
+        run: cargo clippy --locked --workspace --all-targets --no-deps --all-features -- -D warnings
+
+  code-coverage:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Cinstrument-coverage
+      LLVM_PROFILE_FILE: ${{ github.event.repository.name }}-%p-%m.profraw
+    # Needed to write a coverage report to the PR
+    permissions: write-all
+     
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            target/**/*[\!.gcno\|\!.gcda|\!.profraw]
+          key: coverage-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            coverage-
+
+      - name: Run tests with coverage
+        run: |
+          cargo test --locked
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: grcov@0.8
+
+      - uses: ConorMacBride/install-package@v1
+        with:
+          apt: lcov
+
+      - name: Generate LCOV coverage file
+        run: |
+          grcov . \
+            --branch -s . --binary-path ./target/ \
+            -t lcov -o coverage.lcov \
+            --keep-only "crates/**" --ignore-not-existing
+
+      - name: Report code coverage
+        uses: zgosalvez/github-actions-report-lcov@v4
+        with:
+          coverage-files: coverage.lcov
+          minimum-coverage: ${{ env.COVERAGE_THRESHOLD }}
+          artifact-name: code-coverage-report
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          update-comment: true
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            target/
+          key: docs-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            docs-
+
+      - name: Generate docs
+        if: ${{ !cancelled() }}
+        run: cargo doc --profile release --locked --lib --no-deps --all-features --document-private-items
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+      - name: Upload Docs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: target/doc

@@ -1,0 +1,35 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "crates/*",
+    "examples"
+]
+
+[workspace.package]
+authors = ["Dan Robson <danr.236@gmail.com>"]
+categories = ["starter"]
+edition = "2021"
+keywords = ["starter"]
+license = "MIT"
+repository = "https://github.com/dlrobson/rust-starter"
+readme = "README.md"
+version = "0.1.0"
+description = """
+Rust starter project.
+"""
+
+[workspace.lints.rustdoc]
+all = "warn"
+
+[workspace.lints.clippy]
+cargo = "warn"
+pedantic = "warn"
+
+# Defined here: https://doc.rust-lang.org/rustc/lints/listing/allowed-by-default.html
+[workspace.lints.rust]
+keyword_idents_2024 = "warn"
+let_underscore_drop = "warn"
+non_ascii_idents = "forbid"
+unsafe_code = "forbid"
+missing_docs = "warn"

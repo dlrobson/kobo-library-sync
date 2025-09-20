@@ -1,0 +1,22 @@
+[package]
+name = "examples"
+
+authors.workspace = true
+categories.workspace = true
+description.workspace = true
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+starter = { version = "0.1.0", path = "../crates/starter" }
+
+[[example]]
+name = "starter"
+path = "starter.rs"

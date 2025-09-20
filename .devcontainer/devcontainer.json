@@ -1,0 +1,22 @@
+{
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer"
+      ]
+    }
+  },
+  "dockerComposeFile": [
+    "compose.yaml",
+    "compose.override.yaml"
+  ],
+  "initializeCommand": {
+    // Create a `compose.override.yaml` file if it doesn't exist. This
+    // stores user specific configuration settings that are not the same
+    // for everyone.
+    "createOverrideFile": "touch -a .devcontainer/compose.override.yaml"
+  },
+  "name": "${localWorkspaceFolderBasename}",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
+}
