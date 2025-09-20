@@ -12,8 +12,6 @@ on:
         default: false
         type: boolean
 
-env:
-  LOG_LEVEL: ${{ github.event.inputs.debug == 'true' && 'debug' || 'info' }}
 
 jobs:
   renovate:
@@ -26,3 +24,6 @@ jobs:
         uses: renovatebot/github-action@v43.0.12
         with:
           token: ${{ secrets.RENOVATE_TOKEN }}
+        env:
+          LOG_LEVEL: ${{ github.event.inputs.debug == 'true' && 'debug' || 'info' }}
+          RENOVATE_CONFIG_FILE: .github/renovate.json
