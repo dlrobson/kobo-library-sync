@@ -1,27 +1,7 @@
-//! # Starter Rust Project
-//!
-//! This is a starter Rust project that contains the `.github/workflows` and various
-//! configuration files that I find useful for my Rust projects.
+//! Contains the library code for the kobo-server application.
 
-/// Print "Hello, world!" to the console.
-///
-/// # Examples
-///
-/// ```
-/// use starter::hello;
-///
-/// hello();
-/// ```
-pub fn hello() {
-    println!("Hello, world!");
-}
+mod app;
+mod command_line_arguments;
+mod server;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_hello() {
-        hello();
-    }
-}
+pub use app::App;
