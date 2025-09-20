@@ -1,4 +1,4 @@
-name: rust-starter-${USER:?}
+name: kobo-library-sync-${USER:?}
 
 services:
   devcontainer:
@@ -8,5 +8,5 @@ services:
       args:
         USER: ${USER:?}
     volumes:
-      - ..:/workspaces/rust-starter:cached
+      - ..:/workspaces/kobo-library-sync:cached
     command: "bash -c 'trap exit TERM; sleep infinity & wait;'"
