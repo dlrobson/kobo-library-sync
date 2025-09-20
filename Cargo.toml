@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 
 members = [
     "crates/*",
@@ -8,15 +8,15 @@ members = [
 
 [workspace.package]
 authors = ["Dan Robson <danr.236@gmail.com>"]
-categories = ["starter"]
+categories = ["kobo"]
 edition = "2021"
-keywords = ["starter"]
+keywords = ["kobo", "library", "sync"]
 license = "MIT"
-repository = "https://github.com/dlrobson/rust-starter"
+repository = "https://github.com/dlrobson/kobo-library-sync"
 readme = "README.md"
 version = "0.1.0"
 description = """
-Rust starter project.
+Kobo Library Sync.
 """
 
 [workspace.lints.rustdoc]

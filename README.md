@@ -1,18 +1,5 @@
-# Rust Starter
+# Kobo Library Sync
 
-This is a sample starter project for Rust. It includes a simple hello world program. Adds several GitHub Actions workflows for CI/CD.
-
-## GitHub Actions Workflows
-
-Several workflows are included in the repository. They are triggered on different events.
-
-### Analyzers
-
-- rustfmt
-- clippy
-- cargo-audit
-
-### Tests
-
-- cargo test (Includes doc tests)
-- coverage (via grcov). Defaults to 70% coverage threshold requirement. The build will fail if the coverage is below the threshold.
+WIP. The goal is to create a tool that will sync your Kobo eReader library with
+a folder on your computer. This will have a docker image with a rest interface
+that the Kobo eReader can connect to.
