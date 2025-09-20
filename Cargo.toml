@@ -9,7 +9,7 @@ members = [
 [workspace.package]
 authors = ["Dan Robson <danr.236@gmail.com>"]
 categories = ["kobo"]
-edition = "2021"
+edition = "2024"
 keywords = ["kobo", "library", "sync"]
 license = "MIT"
 repository = "https://github.com/dlrobson/kobo-library-sync"

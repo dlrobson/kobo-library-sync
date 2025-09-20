@@ -1,5 +1,4 @@
-# Compatibility:
-edition = "2021"
+edition = "2024"
 
 comment_width = 100
 format_code_in_doc_comments = true
