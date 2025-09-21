@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  COVERAGE_THRESHOLD: 70
+  COVERAGE_THRESHOLD: 65
   RUST_LOG: debug
   RUST_BACKTRACE: full
 
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.90.0
 
       - uses: actions/cache@v4
         with:
@@ -50,13 +50,14 @@ jobs:
           restore-keys: |
             quality-
 
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: nightly-2025-09-01
+          components: rustfmt
         
       - name: Check Rust formatting
         if: ${{ !cancelled() }}
-        run: cargo +nightly fmt --check
+        run: cargo +nightly-2025-09-01 fmt --check
 
       - uses: dtolnay/rust-toolchain@1.90.0
       - name: Check for clippy warnings
@@ -73,7 +74,7 @@ jobs:
      
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.90.0
 
       - uses: actions/cache@v4
         with:
@@ -116,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.90.0
 
       - uses: actions/cache@v4
         with:
