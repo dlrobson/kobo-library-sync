@@ -97,6 +97,7 @@ jobs:
           grcov . \
             --branch -s . --binary-path ./target/ \
             -t lcov -o coverage.lcov \
+            --ignore "crates/*/tests" \
             --keep-only "crates/**" --ignore-not-existing
 
       - name: Report code coverage
