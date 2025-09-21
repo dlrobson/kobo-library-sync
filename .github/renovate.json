@@ -1,50 +1,7 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "assignees": [
-        "dlrobson"
-    ],
-    "enabledManagers": [
-        "cargo",
-        "github-actions",
-        "dockerfile"
-    ],
     "extends": [
         "config:recommended"
     ],
-    "packageRules": [
-        {
-            "matchManagers": [
-                "cargo"
-            ],
-            "groupName": "Cargo dependencies",
-            "addLabels": [
-                "dependencies",
-                "rust"
-            ]
-        },
-        {
-            "matchManagers": [
-                "github-actions"
-            ],
-            "groupName": "GitHub Actions dependencies",
-            "addLabels": [
-                "dependencies",
-                "github-actions"
-            ]
-        },
-        {
-            "matchManagers": [
-                "dockerfile"
-            ],
-            "groupName": "Docker dependencies",
-            "addLabels": [
-                "dependencies",
-                "docker"
-            ]
-        }
-    ],
-    "prHourlyLimit": 10,
-    "reviewers": [
-        "dlrobson"
-    ]
+    "prHourlyLimit": 10
 }
