@@ -116,6 +116,7 @@ impl App {
             .with(
                 tracing_subscriber::EnvFilter::builder()
                     .parse(log_level)
+                    .inspect_err(|e| eprintln!("Failed to parse log level '{log_level}': {e}"))
                     .unwrap_or_default(),
             )
             .with(tracing_subscriber::fmt::layer())
