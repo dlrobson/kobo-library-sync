@@ -22,7 +22,7 @@ pub struct CommandLineArguments {
 impl CommandLineArguments {
     /// Parse the command line arguments. Implemented manually to avoid exposing
     /// the `clap` dependency in the public API.
-    #[must_use] 
+    #[must_use]
     pub fn parse() -> Self {
         <Self as Parser>::parse()
     }
@@ -30,9 +30,9 @@ impl CommandLineArguments {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::str::FromStr as _;
+
+    use super::*;
 
     #[test]
     fn test_default_log_level_is_valid() {

@@ -2,7 +2,10 @@
 
 use std::net::SocketAddr;
 
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::get,
+};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
@@ -82,14 +85,18 @@ async fn log_incoming_request(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use axum::{
         body::Body,
-        http::{Request, StatusCode},
+        http::{
+            Request,
+            StatusCode,
+        },
     };
     use http_body_util::BodyExt;
     use tower::ServiceExt;
     use tracing_test::traced_test;
+
+    use super::*;
 
     #[tokio::test]
     async fn test_hello_world() {

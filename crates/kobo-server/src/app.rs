@@ -2,14 +2,23 @@
 
 use std::{
     net::SocketAddr,
-    sync::{Mutex, PoisonError},
+    sync::{
+        Mutex,
+        PoisonError,
+    },
 };
 
 use anyhow::Result;
 use tokio_util::sync::CancellationToken;
-use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
+use tracing_subscriber::{
+    layer::SubscriberExt as _,
+    util::SubscriberInitExt as _,
+};
 
-use crate::{command_line_arguments::CommandLineArguments, server::Server};
+use crate::{
+    command_line_arguments::CommandLineArguments,
+    server::Server,
+};
 
 /// The main application struct that orchestrates the entire application lifecycle.
 pub struct App {
@@ -17,6 +26,8 @@ pub struct App {
     cancellation_token: CancellationToken,
     // Optional server instance
     server: Mutex<Option<Server>>,
+    // Started flag to indicate if the server is running
+    server_started: CancellationToken,
 }
 
 impl Default for App {
@@ -27,11 +38,12 @@ impl Default for App {
 
 impl App {
     /// Creates a new instance of the application.
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             cancellation_token: CancellationToken::new(),
             server: Mutex::new(None),
+            server_started: CancellationToken::new(),
         }
     }
 
@@ -51,6 +63,7 @@ impl App {
         .await?;
         tracing::info!("Server started on http://{}", server.address());
         *self.server.lock().unwrap_or_else(PoisonError::into_inner) = Some(server);
+        self.server_started.cancel();
 
         tokio::select! {
             result = tokio::signal::ctrl_c() => {
@@ -76,6 +89,11 @@ impl App {
         }
 
         Ok(())
+    }
+
+    /// Waits until the server is running.
+    pub async fn wait_until_running(&self) {
+        self.server_started.cancelled().await;
     }
 
     /// Gets the server's bound address if the server is running

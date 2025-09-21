@@ -54,7 +54,7 @@ jobs:
 
       - name: Check Rust formatting
         if: ${{ !cancelled() }}
-        run: cargo fmt --check
+        run: cargo +nightly fmt --check
 
       - name: Check for clippy warnings
         if: ${{ !cancelled() }}
