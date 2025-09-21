@@ -50,7 +50,10 @@ jobs:
           restore-keys: |
             quality-
 
-      - uses: dtolnay/rust-toolchain@nightly-2025-09-01
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-09-01
+        
       - name: Check Rust formatting
         if: ${{ !cancelled() }}
         run: cargo +nightly fmt --check
