@@ -2,8 +2,7 @@ name: Renovate
 
 on:
   schedule:
-    # Run hourly
-    - cron: '0 * * * *'
+     - cron: '0 */12 * * *'
   workflow_dispatch:
     inputs:
       debug:
@@ -23,7 +22,8 @@ jobs:
       - name: Self-hosted Renovate
         uses: renovatebot/github-action@v43.0.12
         with:
+          configurationFile: .github/renovate.json
           token: ${{ secrets.RENOVATE_TOKEN }}
         env:
           LOG_LEVEL: ${{ github.event.inputs.debug == 'true' && 'debug' || 'info' }}
-          RENOVATE_CONFIG_FILE: .github/renovate.json
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
