@@ -18,8 +18,13 @@ workspace = true
 anyhow = "1.0.100"
 axum = "0.8.4"
 clap = { version = "4.5.48", features = ["derive"] }
-tokio = { version = "1.47.1", features = ["rt-multi-thread"] }
+tokio = { version = "1.47.1", features = ["rt-multi-thread", "signal"] }
+tokio-util = "0.7.16"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 
 [dev-dependencies]
+http-body-util = "0.1"
+tokio-test = "0.4"
+tower = "0.5"
+tracing-test = "0.2"

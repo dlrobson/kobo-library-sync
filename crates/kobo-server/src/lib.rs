@@ -5,3 +5,4 @@ mod command_line_arguments;
 mod server;
 
 pub use app::App;
+pub use command_line_arguments::CommandLineArguments;
