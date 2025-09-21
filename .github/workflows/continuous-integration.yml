@@ -42,8 +42,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-
       - uses: actions/cache@v4
         with:
           path: |
@@ -52,10 +50,12 @@ jobs:
           restore-keys: |
             quality-
 
+      - uses: dtolnay/rust-toolchain@nightly-2025-09-01
       - name: Check Rust formatting
         if: ${{ !cancelled() }}
         run: cargo +nightly fmt --check
 
+      - uses: dtolnay/rust-toolchain@1.90.0
       - name: Check for clippy warnings
         if: ${{ !cancelled() }}
         run: cargo clippy --locked --workspace --all-targets --no-deps --all-features -- -D warnings
