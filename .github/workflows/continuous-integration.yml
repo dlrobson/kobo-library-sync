@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  COVERAGE_THRESHOLD: 65
+  COVERAGE_THRESHOLD: 80
   RUST_LOG: debug
   RUST_BACKTRACE: full
 
@@ -69,9 +69,11 @@ jobs:
     env:
       RUSTFLAGS: -Cinstrument-coverage
       LLVM_PROFILE_FILE: ${{ github.event.repository.name }}-%p-%m.profraw
-    # Needed to write a coverage report to the PR
-    permissions: write-all
-     
+    permissions:
+      # Needed to write a coverage report to the PR
+      pull-requests: write
+      # Needed to update the PR with a comment
+      contents: read
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@1.90.0
@@ -92,26 +94,35 @@ jobs:
         with:
           tool: grcov@0.8
 
-      - uses: ConorMacBride/install-package@v1
-        with:
-          apt: lcov
-
-      - name: Generate LCOV coverage file
+      - name: Generate cobertura coverage file
         run: |
           grcov . \
             --branch -s . --binary-path ./target/ \
-            -t lcov -o coverage.lcov \
+            -t cobertura -o coverage.xml \
             --ignore "crates/*/tests/*" \
             --keep-only "crates/**" --ignore-not-existing
 
-      - name: Report code coverage
-        uses: zgosalvez/github-actions-report-lcov@v4
+      - name: Code Coverage Summary
+        uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-          coverage-files: coverage.lcov
-          minimum-coverage: ${{ env.COVERAGE_THRESHOLD }}
-          artifact-name: code-coverage-report
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          update-comment: true
+          filename: coverage.xml
+          output: both
+          format: markdown
+          thresholds: '${{ env.COVERAGE_THRESHOLD }} 100'
+
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request'
+        with:
+          recreate: true
+          path: code-coverage-results.md
+
+      - name: Fail if coverage below threshold
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage.xml
+          fail_below_min: true
+          thresholds: '${{ env.COVERAGE_THRESHOLD }} 100'
 
   docs:
     runs-on: ubuntu-latest
