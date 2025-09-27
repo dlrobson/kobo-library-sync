@@ -114,7 +114,7 @@ pub async fn log_responses(
 ///
 /// # Errors
 ///
-/// Returns an HTTP 400 Bad Request error if the body cannot be read.
+/// Returns a tuple containing an HTTP status code and error message if the body cannot be read.
 async fn buffer<B>(body: B) -> Result<Bytes, (StatusCode, String)>
 where
     B: HttpBody<Data = Bytes>,
