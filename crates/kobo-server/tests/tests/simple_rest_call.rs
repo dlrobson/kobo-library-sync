@@ -2,10 +2,7 @@
 
 use std::sync::Arc;
 
-use kobo_server::{
-    App,
-    CommandLineArguments,
-};
+use kobo_server::{App, CommandLineArguments};
 
 #[tokio::test]
 async fn test_hello_world_endpoint_integration() {
@@ -35,14 +32,10 @@ async fn test_hello_world_endpoint_integration() {
         .await
         .expect("Failed to send request");
 
-    assert_eq!(response.status(), 200);
-    let body = response
-        .text()
-        .await
-        .expect("Should be able to read response body");
-    assert_eq!(body, "Hello, World!");
+    // Requests forwarded to the kobo server without authentication will be rejected
+    assert_eq!(response.status(), hyper::StatusCode::UNAUTHORIZED);
 
-    app.shutdown();
+    app.shutdown().await.expect("Should shutdown cleanly");
     app_handle
         .await
         .unwrap()

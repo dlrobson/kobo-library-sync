@@ -24,15 +24,45 @@ all = "warn"
 [workspace.lints.clippy]
 cargo = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+cognitive_complexity = "warn"
+empty_structs_with_brackets = "warn"
+error_impl_error = "warn"
+exit = "warn"
+expect_used = "warn"
+if_then_some_else_none = "warn"
 # Renovate is active in this repo, so all dependencies are up to date. There
 # may be multiple versions of the same crate in the dependency tree, and does
 # not seem to be a simple way to avoid that.
 multiple_crate_versions = "allow"
+panic = "warn"
+print_stderr = "warn"
+print_stdout = "warn"
+redundant_type_annotations = "warn"
+return_and_then = "warn"
+same_name_method = "warn"
+self_named_module_files = "warn"
+tests_outside_test_module = "warn"
+todo = "warn"
+try_err = "warn"
+unimplemented = "warn"
+unnecessary_safety_comment = "warn"
+unnecessary_safety_doc = "warn"
+unnecessary_self_imports = "warn"
+unreachable = "warn"
+unused_result_ok = "warn"
+unused_trait_names = "warn"
+unwrap_used = "warn"
+use_debug = "warn"
+verbose_file_reads = "warn"
+wildcard_enum_match_arm = "warn"
 
 # Defined here: https://doc.rust-lang.org/rustc/lints/listing/allowed-by-default.html
 [workspace.lints.rust]
 keyword_idents_2024 = "warn"
 let_underscore_drop = "warn"
+missing_docs = "warn"
 non_ascii_idents = "forbid"
 unsafe_code = "forbid"
-missing_docs = "warn"
+unused_extern_crates = "warn"
