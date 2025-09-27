@@ -2,21 +2,12 @@
 
 use anyhow::Result;
 use axum::{
-    extract::{
-        Request,
-        State,
-    },
+    extract::{Request, State},
     http::{
         Uri,
-        uri::{
-            Parts,
-            Scheme,
-        },
+        uri::{Parts, Scheme},
     },
-    response::{
-        IntoResponse as _,
-        Response,
-    },
+    response::{IntoResponse as _, Response},
 };
 
 use crate::server::server_state::ServerState;

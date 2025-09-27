@@ -1,9 +1,6 @@
 use hyper_tls::HttpsConnector;
 use hyper_util::{
-    client::legacy::{
-        Client,
-        connect::HttpConnector,
-    },
+    client::legacy::{Client, connect::HttpConnector},
     rt::TokioExecutor,
 };
 

@@ -2,10 +2,7 @@
 
 use std::sync::Arc;
 
-use kobo_server::{
-    App,
-    CommandLineArguments,
-};
+use kobo_server::{App, CommandLineArguments};
 
 #[tokio::test]
 async fn test_hello_world_endpoint_integration() {

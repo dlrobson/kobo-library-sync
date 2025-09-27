@@ -2,17 +2,12 @@
 
 use std::net::SocketAddr;
 
-use axum::{
-    Router,
-    middleware,
-};
+use axum::{Router, middleware};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
 use crate::server::{
-    kobo_store_fallback::kobo_store_fallback,
-    request_logging,
-    server_state::ServerState,
+    kobo_store_fallback::kobo_store_fallback, request_logging, server_state::ServerState,
 };
 
 /// Server struct that manages the Axum server lifecycle

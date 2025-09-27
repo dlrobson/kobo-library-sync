@@ -1,13 +1,7 @@
 //! A simple web server using Axum framework
 
-use kobo_server::{
-    App,
-    CommandLineArguments,
-};
-use tracing_subscriber::{
-    layer::SubscriberExt as _,
-    util::SubscriberInitExt as _,
-};
+use kobo_server::{App, CommandLineArguments};
+use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -2,19 +2,13 @@
 
 use std::{
     net::SocketAddr,
-    sync::{
-        Mutex,
-        PoisonError,
-    },
+    sync::{Mutex, PoisonError},
 };
 
 use anyhow::Result;
 use tokio_util::sync::CancellationToken;
 
-use crate::{
-    command_line_arguments::CommandLineArguments,
-    server::Server,
-};
+use crate::{command_line_arguments::CommandLineArguments, server::Server};
 
 /// The main application struct that orchestrates the entire application lifecycle.
 pub struct App {
