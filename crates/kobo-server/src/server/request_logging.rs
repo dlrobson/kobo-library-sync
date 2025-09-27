@@ -124,7 +124,7 @@ where
         Ok(collected) => collected.to_bytes(),
         Err(err) => {
             return Err((
-                StatusCode::BAD_REQUEST,
+                StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to read body: {err}"),
             ));
         }
