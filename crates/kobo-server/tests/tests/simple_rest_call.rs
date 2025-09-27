@@ -2,10 +2,7 @@
 
 use std::sync::Arc;
 
-use kobo_server::{
-    App,
-    CommandLineArguments,
-};
+use kobo_server::{App, CommandLineArguments};
 
 #[tokio::test]
 async fn test_hello_world_endpoint_integration() {
@@ -42,7 +39,7 @@ async fn test_hello_world_endpoint_integration() {
         .expect("Should be able to read response body");
     assert_eq!(body, "Hello, World!");
 
-    app.shutdown();
+    app.shutdown().await.expect("Should shutdown cleanly");
     app_handle
         .await
         .unwrap()

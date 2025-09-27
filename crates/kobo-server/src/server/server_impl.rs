@@ -2,12 +2,13 @@
 
 use std::net::SocketAddr;
 
-use axum::{
-    Router,
-    routing::get,
-};
+use axum::{Router, middleware};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
+
+use crate::server::{
+    kobo_store_fallback::kobo_store_fallback, request_logging, server_state::ServerState,
+};
 
 /// Server struct that manages the Axum server lifecycle
 pub struct Server {
@@ -25,14 +26,12 @@ impl Server {
         port: u16,
         cancellation_token: CancellationToken,
         enable_request_logging: bool,
+        enable_response_logging: bool,
     ) -> anyhow::Result<Self> {
-        let app = create_app(enable_request_logging);
+        let app = create_router(enable_request_logging, enable_response_logging);
         let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
-
-        // Get the actual bound address (important when port is 0)
         let address = listener.local_addr()?;
 
-        // Spawn the server in a background task
         let cancellation_token_clone = cancellation_token.clone();
         let server_handle = tokio::spawn(async move {
             axum::serve(listener, app)
@@ -63,44 +62,34 @@ impl Server {
 }
 
 /// Creates and configures the Axum router
-fn create_app(enable_request_logging: bool) -> Router {
-    let mut router = Router::new().route("/", get(|| async { "Hello, World!" }));
+fn create_router(enable_request_logging: bool, enable_response_logging: bool) -> Router {
+    let mut router = Router::new().fallback(kobo_store_fallback);
 
     if enable_request_logging {
-        router = router.layer(axum::middleware::from_fn(log_incoming_request));
+        router = router.layer(middleware::from_fn(request_logging::log_requests));
     }
 
-    router
-}
-
-/// Middleware to log incoming requests. Useful for determining the incoming traffic.
-async fn log_incoming_request(
-    req: axum::extract::Request,
-    next: axum::middleware::Next,
-) -> Result<impl axum::response::IntoResponse, (axum::http::StatusCode, String)> {
-    tracing::debug!("Incoming request: {} {}", req.method(), req.uri());
-
-    Ok(next.run(req).await)
+    if enable_response_logging {
+        router = router.layer(middleware::from_fn(request_logging::log_responses));
+    }
+    router.with_state(ServerState::new())
 }
 
 #[cfg(test)]
 mod tests {
     use axum::{
         body::Body,
-        http::{
-            Request,
-            StatusCode,
-        },
+        http::{Request, StatusCode},
     };
-    use http_body_util::BodyExt;
-    use tower::ServiceExt;
+    use http_body_util::BodyExt as _;
+    use tower::ServiceExt as _;
     use tracing_test::traced_test;
 
     use super::*;
 
     #[tokio::test]
     async fn test_hello_world() {
-        let app = create_app(false);
+        let app = create_router(false, false);
 
         let response = app
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
@@ -115,7 +104,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_not_found() {
-        let app = create_app(false);
+        let app = create_router(false, false);
 
         let response = app
             .oneshot(
@@ -135,7 +124,7 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn test_app_with_logging_enabled() {
-        let app = create_app(true);
+        let app = create_router(true, true);
 
         let response = app
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
