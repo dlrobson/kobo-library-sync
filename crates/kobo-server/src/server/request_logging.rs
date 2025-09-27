@@ -29,8 +29,7 @@ use hyper::StatusCode;
 /// # Errors
 ///
 /// Returns an
-/// * HTTP 500 Internal Server Error if the request body cannot be read, decoded, or decompressed
-///   (e.g., IO/buffering error, decoding failure, or decompression failure).
+/// * HTTP 500 Internal Server Error if the request body cannot be read (e.g., IO/buffering error).
 pub async fn log_requests(
     request: Request,
     next: Next,
@@ -38,22 +37,22 @@ pub async fn log_requests(
     let (parts, body) = request.into_parts();
     let bytes = buffer(body).await?;
 
-    match body_display(
-        &bytes,
-        &EncodingType::from(parts.headers.get("content-encoding")),
-    ) {
-        Ok(body) => tracing::info!(
-            method = %parts.method,
-            uri = %parts.uri,
-            headers = ?parts.headers,
-            body = %body,
-            "Incoming Request"
-        ),
+    let encoding_type: EncodingType = parts.headers.get("content-encoding").into();
+    let body_repr = match body_display(&bytes, &encoding_type) {
+        Ok(body) => body,
         Err(e) => {
-            tracing::error!("Failed to decode request body: {e}");
-            return Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()));
+            tracing::warn!("Failed to decode request body: {e}");
+            Cow::Owned("<unprintable body>".into())
         }
-    }
+    };
+
+    tracing::info!(
+        method = %parts.method,
+        uri = %parts.uri,
+        headers = ?parts.headers,
+        body = %body_repr,
+        "Incoming Request"
+    );
     let req = Request::from_parts(parts, Body::from(bytes));
 
     Ok(next.run(req).await)
@@ -71,9 +70,7 @@ pub async fn log_requests(
 /// # Errors
 ///
 /// Returns a
-/// * HTTP 400 Bad Request if the response body cannot be read (e.g., IO/buffering error).
-/// * HTTP 500 Internal Server Error if the response body cannot be decoded or decompressed (e.g.,
-///   decoding/decompression failure).
+/// * HTTP 500 Internal Server Error if the response body cannot be read (e.g., IO/buffering error).
 pub async fn log_responses(
     request: Request,
     next: Next,
@@ -84,18 +81,20 @@ pub async fn log_responses(
     let bytes = buffer(body).await?;
     let encoding_type: EncodingType = parts.headers.get("content-encoding").into();
 
-    match body_display(&bytes, &encoding_type) {
-        Ok(body) => tracing::info!(
-            status = %parts.status,
-            headers = ?parts.headers,
-            body = %body,
-            "Outgoing Response"
-        ),
+    let body_repr = match body_display(&bytes, &encoding_type) {
+        Ok(body) => body,
         Err(e) => {
-            tracing::error!("Failed to decode response body: {e}");
-            return Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()));
+            tracing::warn!("Failed to decode response body: {e}");
+            Cow::Owned("<unprintable body>".into())
         }
-    }
+    };
+
+    tracing::info!(
+        status = %parts.status,
+        headers = ?parts.headers,
+        body = %body_repr,
+        "Outgoing Response"
+    );
 
     let res = Response::from_parts(parts, Body::from(bytes));
 
