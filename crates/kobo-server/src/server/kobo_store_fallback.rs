@@ -64,8 +64,7 @@ pub async fn kobo_store_fallback(
 
     // Replace the `host` header to match the Kobo API host. Required since
     // we're forwarding the request to a different host.
-    request.headers_mut().remove("host");
-    request.headers_mut().append(
+    request.headers_mut().insert(
         "host",
         hyper::header::HeaderValue::from_static(KOBO_API_BASE_URI),
     );

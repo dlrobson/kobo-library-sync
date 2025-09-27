@@ -10,10 +10,6 @@ use std::{
 
 use anyhow::Result;
 use tokio_util::sync::CancellationToken;
-use tracing_subscriber::{
-    layer::SubscriberExt as _,
-    util::SubscriberInitExt as _,
-};
 
 use crate::{
     command_line_arguments::CommandLineArguments,
@@ -53,7 +49,6 @@ impl App {
     ///
     /// If the server fails to start.
     pub async fn run(&self, command_line_arguments: CommandLineArguments) -> Result<()> {
-        Self::initialize_logging(&command_line_arguments.log_level);
         self.start_server(command_line_arguments).await?;
         self.wait_for_shutdown_signal().await;
         self.shutdown().await?;
@@ -129,22 +124,5 @@ impl App {
         }
 
         Ok(())
-    }
-
-    /// Initialize the logging subsystem with the specified log level.
-    #[expect(
-        clippy::print_stderr,
-        reason = "Logging initialization errors are printed to stderr"
-    )]
-    fn initialize_logging(log_level: &str) {
-        tracing_subscriber::registry()
-            .with(
-                tracing_subscriber::EnvFilter::builder()
-                    .parse(log_level)
-                    .inspect_err(|e| eprintln!("Failed to parse log level '{log_level}': {e}"))
-                    .unwrap_or_default(),
-            )
-            .with(tracing_subscriber::fmt::layer())
-            .init();
     }
 }

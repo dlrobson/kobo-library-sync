@@ -29,8 +29,9 @@ use http_body_util::BodyExt as _;
 ///
 /// # Errors
 ///
-/// Returns an HTTP 400 Bad Request error if the request body cannot be read
-/// or decoded.
+/// Returns an
+/// * HTTP 400 Bad Request if the request body cannot be read.
+/// * HTTP 500 Internal Server Error if the request body cannot be read or decoded.
 pub async fn log_requests(
     request: Request,
     next: axum::middleware::Next,
@@ -51,7 +52,7 @@ pub async fn log_requests(
         ),
         Err(e) => {
             tracing::error!("Failed to decode request body: {e}");
-            return Err((hyper::StatusCode::BAD_REQUEST, e.to_string()));
+            return Err((hyper::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()));
         }
     }
     let req = Request::from_parts(parts, Body::from(bytes));
@@ -70,8 +71,9 @@ pub async fn log_requests(
 ///
 /// # Errors
 ///
-/// Returns an HTTP 400 Bad Request error if the response body cannot be read
-/// or decoded.
+/// Returns an
+/// * HTTP 400 Bad Request if the response body cannot be read.
+/// * HTTP 500 Internal Server Error if the response body cannot be read or decoded.
 pub async fn log_responses(
     request: Request,
     next: axum::middleware::Next,
@@ -90,7 +92,7 @@ pub async fn log_responses(
         ),
         Err(e) => {
             tracing::error!("Failed to decode response body: {e}");
-            return Err((hyper::StatusCode::BAD_REQUEST, e.to_string()));
+            return Err((hyper::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()));
         }
     }
 
@@ -184,16 +186,14 @@ fn body_display<'a>(
     bytes: &'a Bytes,
     encoding_type: &EncodingType,
 ) -> Result<Box<dyn std::fmt::Display + 'a>> {
-    let body: Box<dyn std::fmt::Display> = match encoding_type {
+    match encoding_type {
         EncodingType::Gzip => {
             let mut gz = GzDecoder::new(&bytes[..]);
             let mut s = String::new();
             gz.read_to_string(&mut s)?;
 
-            Box::new(s)
+            Ok(Box::new(s))
         }
-        EncodingType::Plain => Box::new(String::from_utf8_lossy(bytes)),
-    };
-
-    Ok(body)
+        EncodingType::Plain => Ok(Box::new(String::from_utf8_lossy(bytes))),
+    }
 }
