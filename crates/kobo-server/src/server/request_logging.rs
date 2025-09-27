@@ -28,10 +28,9 @@ use hyper::StatusCode;
 ///
 /// # Errors
 ///
-/// Returns a
-/// * HTTP 400 Bad Request if the request body cannot be read (e.g., IO/buffering error).
-/// * HTTP 500 Internal Server Error if the request body cannot be decoded or decompressed (e.g.,
-///   decoding/decompression failure).
+/// Returns an
+/// * HTTP 500 Internal Server Error if the request body cannot be read, decoded, or decompressed (e.g.,
+///   IO/buffering error, decoding failure, or decompression failure).
 pub async fn log_requests(
     request: Request,
     next: Next,
