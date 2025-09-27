@@ -8,9 +8,10 @@ use std::io::Read as _;
 
 use anyhow::Result;
 use axum::{
-    body::{Body, Bytes},
+    body::{Body, Bytes, HttpBody},
     extract::Request,
-    response::Response,
+    middleware::Next,
+    response::{IntoResponse, Response},
 };
 use flate2::read::GzDecoder;
 use http_body_util::BodyExt as _;
@@ -31,8 +32,8 @@ use http_body_util::BodyExt as _;
 /// * HTTP 500 Internal Server Error if the request body cannot be read or decoded.
 pub async fn log_requests(
     request: Request,
-    next: axum::middleware::Next,
-) -> Result<impl axum::response::IntoResponse, (hyper::StatusCode, String)> {
+    next: Next,
+) -> Result<impl IntoResponse, (hyper::StatusCode, String)> {
     let (parts, body) = request.into_parts();
     let bytes = buffer(body).await?;
 
@@ -73,8 +74,8 @@ pub async fn log_requests(
 /// * HTTP 500 Internal Server Error if the response body cannot be read or decoded.
 pub async fn log_responses(
     request: Request,
-    next: axum::middleware::Next,
-) -> Result<impl axum::response::IntoResponse, (hyper::StatusCode, String)> {
+    next: Next,
+) -> Result<impl IntoResponse, (hyper::StatusCode, String)> {
     let res = next.run(request).await;
 
     let (parts, body) = res.into_parts();
@@ -104,10 +105,6 @@ pub async fn log_responses(
 /// allowing the body content to be logged while preserving it for
 /// further processing.
 ///
-/// # Parameters
-///
-/// * `body` - The HTTP body to buffer
-///
 /// # Returns
 ///
 /// Returns the body content as `Bytes`.
@@ -117,7 +114,7 @@ pub async fn log_responses(
 /// Returns an HTTP 400 Bad Request error if the body cannot be read.
 async fn buffer<B>(body: B) -> Result<Bytes, (hyper::StatusCode, String)>
 where
-    B: axum::body::HttpBody<Data = Bytes>,
+    B: HttpBody<Data = Bytes>,
     B::Error: std::fmt::Display,
 {
     let bytes = match body.collect().await {
@@ -145,10 +142,6 @@ enum EncodingType {
 impl From<Option<&hyper::header::HeaderValue>> for EncodingType {
     /// Converts an HTTP Content-Encoding header value to an `EncodingType`.
     ///
-    /// # Parameters
-    ///
-    /// * `value` - The Content-Encoding header value
-    ///
     /// # Returns
     ///
     /// Returns `EncodingType::Gzip` if the header indicates gzip encoding,
@@ -165,11 +158,6 @@ impl From<Option<&hyper::header::HeaderValue>> for EncodingType {
 ///
 /// This function decodes the body content based on its encoding type and
 /// returns a displayable representation suitable for logging.
-///
-/// # Parameters
-///
-/// * `bytes` - The raw body bytes
-/// * `encoding_type` - The encoding type of the body content
 ///
 /// # Returns
 ///
