@@ -29,7 +29,7 @@ impl KoboClient for Client<HttpsConnector<HttpConnector>, Body> {
 #[cfg(test)]
 pub mod stub_kobo_client {
     use std::collections::VecDeque;
-    use std::sync::{Mutex, PoisonError};
+    use std::sync::{Mutex, MutexGuard, PoisonError};
 
     use anyhow::anyhow;
     use axum::http::{HeaderMap, Method, Uri};
@@ -57,25 +57,28 @@ pub mod stub_kobo_client {
             Self::default()
         }
 
-        pub fn enqueue_response(&self, response: Response<Body>) {
+        fn get_responses_lock(&self) -> MutexGuard<'_, VecDeque<Result<Response<Body>>>> {
             self.responses
                 .lock()
                 .unwrap_or_else(PoisonError::into_inner)
-                .push_back(Ok(response));
         }
 
-        pub fn enqueue_error(&self, error: anyhow::Error) {
-            self.responses
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .push_back(Err(error));
-        }
-
-        pub fn recorded_requests(&self) -> Vec<RecordedRequest> {
+        fn get_recorded_requests_lock(&self) -> MutexGuard<'_, Vec<RecordedRequest>> {
             self.recorded_requests
                 .lock()
                 .unwrap_or_else(PoisonError::into_inner)
-                .clone()
+        }
+
+        pub fn enqueue_response(&self, response: Response<Body>) {
+            self.get_responses_lock().push_back(Ok(response));
+        }
+
+        pub fn enqueue_error(&self, error: anyhow::Error) {
+            self.get_responses_lock().push_back(Err(error));
+        }
+
+        pub fn recorded_requests(&self) -> Vec<RecordedRequest> {
+            self.get_recorded_requests_lock().clone()
         }
     }
 
@@ -92,14 +95,9 @@ pub mod stub_kobo_client {
                 body: body_bytes.to_vec(),
             };
 
-            self.recorded_requests
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .push(recorded);
+            self.get_recorded_requests_lock().push(recorded);
 
-            self.responses
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
+            self.get_responses_lock()
                 .pop_front()
                 .unwrap_or_else(|| Err(anyhow!("No stubbed response configured")))
         }
