@@ -2,10 +2,7 @@
 
 use std::sync::Arc;
 
-use kobo_server::{
-    App,
-    CommandLineArguments,
-};
+use kobo_server::{App, CommandLineArguments};
 
 #[tokio::test]
 async fn test_clean_shutdown() {
@@ -21,7 +18,7 @@ async fn test_clean_shutdown() {
     let app_handle = tokio::spawn(async move { app_clone.run(args).await });
 
     // Cancel the task to simulate shutdown
-    app.shutdown();
+    app.shutdown().await.expect("Should shutdown cleanly");
 
     app_handle
         .await

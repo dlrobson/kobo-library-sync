@@ -2,23 +2,13 @@
 
 use std::{
     net::SocketAddr,
-    sync::{
-        Mutex,
-        PoisonError,
-    },
+    sync::{Mutex, PoisonError},
 };
 
 use anyhow::Result;
 use tokio_util::sync::CancellationToken;
-use tracing_subscriber::{
-    layer::SubscriberExt as _,
-    util::SubscriberInitExt as _,
-};
 
-use crate::{
-    command_line_arguments::CommandLineArguments,
-    server::Server,
-};
+use crate::{command_line_arguments::CommandLineArguments, server::Server};
 
 /// The main application struct that orchestrates the entire application lifecycle.
 pub struct App {
@@ -53,42 +43,47 @@ impl App {
     ///
     /// If the server fails to start.
     pub async fn run(&self, command_line_arguments: CommandLineArguments) -> Result<()> {
-        Self::initialize_logging(&command_line_arguments.log_level);
+        self.start_server(command_line_arguments).await?;
+        self.wait_for_shutdown_signal().await;
+        self.shutdown().await?;
 
+        Ok(())
+    }
+
+    /// Starts the server and stores it in the app state
+    ///
+    /// # Errors
+    ///
+    /// If the server fails to start.
+    async fn start_server(&self, command_line_arguments: CommandLineArguments) -> Result<()> {
         let server = Server::start(
             command_line_arguments.port,
             self.cancellation_token.clone(),
             command_line_arguments.enable_request_logging,
+            command_line_arguments.enable_response_logging,
         )
         .await?;
+
         tracing::info!("Server started on http://{}", server.address());
         *self.server.lock().unwrap_or_else(PoisonError::into_inner) = Some(server);
         self.server_started.cancel();
 
+        Ok(())
+    }
+
+    /// Waits for a shutdown signal (Ctrl+C or cancellation token)
+    async fn wait_for_shutdown_signal(&self) {
         tokio::select! {
             result = tokio::signal::ctrl_c() => {
-                match result {
-                    Ok(()) => tracing::info!("Shutdown signal received"),
-                    Err(e) => tracing::error!("Failed to listen for shutdown signal: {e}"),
+                if let Err(e) = result {
+                    tracing::error!("Failed to listen for shutdown signal: {e}");
+                    return;
                 }
             }
-            () = self.cancellation_token.cancelled() => {
-                tracing::info!("Cancellation token cancelled");
-            }
+            () = self.cancellation_token.cancelled() => ()
         }
 
-        // Shutdown the server
-        let server = self
-            .server
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .take();
-
-        if let Some(server) = server {
-            server.shutdown().await?;
-        }
-
-        Ok(())
+        tracing::info!("Shutdown signal received");
     }
 
     /// Waits until the server is running.
@@ -106,20 +101,22 @@ impl App {
     }
 
     /// Gracefully shuts down the application.
-    pub fn shutdown(&self) {
+    ///
+    /// # Errors
+    ///
+    /// If the server fails to shut down cleanly.
+    pub async fn shutdown(&self) -> Result<()> {
         self.cancellation_token.cancel();
-    }
+        let server = self
+            .server
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .take();
 
-    /// Initialize the logging subsystem with the specified log level.
-    fn initialize_logging(log_level: &str) {
-        tracing_subscriber::registry()
-            .with(
-                tracing_subscriber::EnvFilter::builder()
-                    .parse(log_level)
-                    .inspect_err(|e| eprintln!("Failed to parse log level '{log_level}': {e}"))
-                    .unwrap_or_default(),
-            )
-            .with(tracing_subscriber::fmt::layer())
-            .init();
+        if let Some(server) = server {
+            server.shutdown().await?;
+        }
+
+        Ok(())
     }
 }

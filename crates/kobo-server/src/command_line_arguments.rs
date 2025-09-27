@@ -11,19 +11,23 @@ pub struct CommandLineArguments {
     pub log_level: String,
 
     /// The port to listen on.
-    #[arg(short, long, default_value_t = 3000)]
+    #[arg(short, long, default_value_t = 8089)]
     pub port: u16,
 
     /// Enable request logging middleware.
-    #[arg(long, default_value_t = false)]
+    #[arg(short = 'q', long, default_value_t = false)]
     pub enable_request_logging: bool,
+
+    /// Enable response logging middleware.
+    #[arg(short = 'r', long, default_value_t = false)]
+    pub enable_response_logging: bool,
 }
 
 impl CommandLineArguments {
     /// Parse the command line arguments. Implemented manually to avoid exposing
     /// the `clap` dependency in the public API.
     #[must_use]
-    pub fn parse() -> Self {
+    pub fn parse_arguments() -> Self {
         <Self as Parser>::parse()
     }
 }
