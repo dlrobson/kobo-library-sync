@@ -8,7 +8,10 @@ use std::io::Read as _;
 
 use anyhow::Result;
 use axum::{
-    body::{Body, Bytes},
+    body::{
+        Body,
+        Bytes,
+    },
     extract::Request,
     response::Response,
 };

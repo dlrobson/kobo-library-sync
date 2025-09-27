@@ -2,14 +2,23 @@
 
 use std::{
     net::SocketAddr,
-    sync::{Mutex, PoisonError},
+    sync::{
+        Mutex,
+        PoisonError,
+    },
 };
 
 use anyhow::Result;
 use tokio_util::sync::CancellationToken;
-use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
+use tracing_subscriber::{
+    layer::SubscriberExt as _,
+    util::SubscriberInitExt as _,
+};
 
-use crate::{command_line_arguments::CommandLineArguments, server::Server};
+use crate::{
+    command_line_arguments::CommandLineArguments,
+    server::Server,
+};
 
 /// The main application struct that orchestrates the entire application lifecycle.
 pub struct App {

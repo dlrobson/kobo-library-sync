@@ -2,12 +2,17 @@
 
 use std::net::SocketAddr;
 
-use axum::{Router, middleware};
+use axum::{
+    Router,
+    middleware,
+};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
 use crate::server::{
-    kobo_store_fallback::kobo_store_fallback, request_logging, server_state::ServerState,
+    kobo_store_fallback::kobo_store_fallback,
+    request_logging,
+    server_state::ServerState,
 };
 
 /// Server struct that manages the Axum server lifecycle
@@ -79,7 +84,10 @@ fn create_router(enable_request_logging: bool, enable_response_logging: bool) ->
 mod tests {
     use axum::{
         body::Body,
-        http::{Request, StatusCode},
+        http::{
+            Request,
+            StatusCode,
+        },
     };
     use http_body_util::BodyExt as _;
     use tower::ServiceExt as _;

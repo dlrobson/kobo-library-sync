@@ -1,6 +1,9 @@
 //! A simple web server using Axum framework
 
-use kobo_server::{App, CommandLineArguments};
+use kobo_server::{
+    App,
+    CommandLineArguments,
+};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
