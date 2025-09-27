@@ -159,8 +159,8 @@ impl From<Option<&hyper::header::HeaderValue>> for EncodingType {
 
 /// Converts HTTP body bytes to a displayable string, handling different encodings.
 ///
-/// This function returns a non-boxed `Cow<'a, str>` to represent either the borrowed plain text or
-/// the owned, decompressed Gzip content.
+/// This function returns a `Cow<'a, str>` that is either a borrowed reference to the plain text
+/// or an owned string containing the decompressed Gzip content.
 ///
 /// # Returns
 ///
