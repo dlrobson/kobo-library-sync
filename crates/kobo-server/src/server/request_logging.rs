@@ -72,8 +72,7 @@ pub async fn log_requests(
 ///
 /// Returns a
 /// * HTTP 400 Bad Request if the response body cannot be read (e.g., IO/buffering error).
-/// * HTTP 500 Internal Server Error if the response body cannot be decoded or decompressed (e.g.,
-///   decoding/decompression failure).
+/// * HTTP 500 Internal Server Error if the response body cannot be decoded or decompressed (e.g., decoding/decompression failure).
 pub async fn log_responses(
     request: Request,
     next: Next,
