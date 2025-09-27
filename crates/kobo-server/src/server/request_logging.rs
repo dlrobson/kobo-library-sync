@@ -125,7 +125,7 @@ where
         Err(err) => {
             return Err((
                 StatusCode::BAD_REQUEST,
-                format!("failed to read body: {err}"),
+                format!("Failed to read body: {err}"),
             ));
         }
     };
