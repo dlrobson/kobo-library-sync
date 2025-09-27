@@ -2,13 +2,10 @@
 
 use std::net::SocketAddr;
 
-use axum::{Router, middleware};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
-use crate::server::{
-    kobo_store_fallback::kobo_store_fallback, request_logging, server_state::ServerState,
-};
+use crate::server::router::create_router;
 
 /// Server struct that manages the Axum server lifecycle
 pub struct Server {
@@ -22,6 +19,10 @@ pub struct Server {
 
 impl Server {
     /// Creates a new server instance and starts it
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the server fails to start.
     pub async fn start(
         port: u16,
         cancellation_token: CancellationToken,
@@ -55,22 +56,12 @@ impl Server {
     }
 
     /// Gracefully shuts down the server
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the server fails to shut down cleanly.
     pub async fn shutdown(self) -> anyhow::Result<()> {
         self.cancellation_token.cancel();
         self.handle.await?
     }
-}
-
-/// Creates and configures the Axum router
-fn create_router(enable_request_logging: bool, enable_response_logging: bool) -> Router {
-    let mut router = Router::new().fallback(kobo_store_fallback);
-
-    if enable_request_logging {
-        router = router.layer(middleware::from_fn(request_logging::log_requests));
-    }
-
-    if enable_response_logging {
-        router = router.layer(middleware::from_fn(request_logging::log_responses));
-    }
-    router.with_state(ServerState::new())
 }

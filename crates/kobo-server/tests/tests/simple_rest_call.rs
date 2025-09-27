@@ -33,7 +33,7 @@ async fn test_hello_world_endpoint_integration() {
         .expect("Failed to send request");
 
     // Requests forwarded to the kobo server without authentication will be rejected
-    assert_eq!(response.status(), 401);
+    assert_eq!(response.status(), hyper::StatusCode::UNAUTHORIZED);
 
     app.shutdown().await.expect("Should shutdown cleanly");
     app_handle
