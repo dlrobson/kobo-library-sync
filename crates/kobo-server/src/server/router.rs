@@ -27,7 +27,7 @@ fn create_router_with_state(
     let router = Router::new().fallback(kobo_store_fallback).layer(
         ServiceBuilder::new()
             // Removes double leading slashes and removes trailing slashes. The Kobo device always
-            // sends a double leading slash,
+            // sends a double leading slash in its requests (e.g., "//library"), so we normalize the path to ensure consistent routing.
             .layer(NormalizePathLayer::trim_trailing_slash())
             .option_layer(
                 enable_request_logging.then(|| middleware::from_fn(request_logging::log_requests)),
