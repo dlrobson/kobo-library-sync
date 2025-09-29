@@ -1,12 +1,10 @@
-//! Server implementation for the Kobo store.
+//! Server components for the Kobo proxy application.
 
-mod client;
-mod kobo_store_fallback;
-mod request_logging;
+mod middleware;
 mod router;
 mod server_impl;
-mod server_state;
+mod state;
 
-#[cfg(test)]
-use client::stub_kobo_client::StubKoboClient;
 pub use server_impl::Server;
+#[cfg(test)]
+use state::client::stub_kobo_client::StubKoboClient;

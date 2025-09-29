@@ -1,9 +1,12 @@
 //! The Router module for the Kobo server, defining routes and middleware.
 
 use axum::{Router, middleware};
+use tower::ServiceBuilder;
+use tower_http::normalize_path::NormalizePathLayer;
 
 use crate::server::{
-    kobo_store_fallback::kobo_store_fallback, request_logging, server_state::ServerState,
+    middleware::{kobo_store_fallback::kobo_store_fallback, request_logging},
+    state::server_state::ServerState,
 };
 
 /// Creates and configures the Axum router with default server state.
@@ -21,15 +24,20 @@ fn create_router_with_state(
     enable_response_logging: bool,
     state: ServerState,
 ) -> Router {
-    let mut router = Router::new().fallback(kobo_store_fallback);
-
-    if enable_request_logging {
-        router = router.layer(middleware::from_fn(request_logging::log_requests));
-    }
-
-    if enable_response_logging {
-        router = router.layer(middleware::from_fn(request_logging::log_responses));
-    }
+    let router = Router::new().fallback(kobo_store_fallback).layer(
+        ServiceBuilder::new()
+            // Removes double leading slashes and removes trailing slashes. The Kobo device always
+            // sends a double leading slash in its requests (e.g., "//library"), so we normalize the
+            // path to ensure consistent routing.
+            .layer(NormalizePathLayer::trim_trailing_slash())
+            .option_layer(
+                enable_request_logging.then(|| middleware::from_fn(request_logging::log_requests)),
+            )
+            .option_layer(
+                enable_response_logging
+                    .then(|| middleware::from_fn(request_logging::log_responses)),
+            ),
+    );
 
     router.with_state(state)
 }
@@ -52,7 +60,7 @@ mod tests {
 
     use super::*;
     use crate::server::StubKoboClient;
-    use crate::server::{client::KoboClient, server_state::ServerState};
+    use crate::server::state::{client::KoboClient, server_state::ServerState};
 
     const TEST_BODY: &str = "test body";
     const TEST_RESPONSE: &str = "stubbed response";
@@ -241,6 +249,62 @@ mod tests {
                 .expect("service should return a response");
 
             assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+        }
+
+        #[tokio::test]
+        async fn multiple_leading_slashes_are_normalized() {
+            let (router, stub) = build_router_with_stub(false, false);
+            stub.enqueue_response(
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .body(Body::from(TEST_RESPONSE))
+                    .expect("failed to build stub response"),
+            );
+
+            let request = Request::builder()
+                .uri("///some/path")
+                .body(Body::from(TEST_BODY))
+                .expect("failed to build request");
+
+            let response = router
+                .oneshot(request)
+                .await
+                .expect("service should return a response");
+
+            assert_eq!(response.status(), StatusCode::OK);
+
+            let recorded = stub.recorded_requests();
+            let forwarded = recorded.first().expect("expected a recorded request");
+
+            assert_eq!(forwarded.uri.path(), "/some/path");
+        }
+
+        #[tokio::test]
+        async fn trailing_slash_is_removed() {
+            let (router, stub) = build_router_with_stub(false, false);
+            stub.enqueue_response(
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .body(Body::from(TEST_RESPONSE))
+                    .expect("failed to build stub response"),
+            );
+
+            let request = Request::builder()
+                .uri("/some/path//")
+                .body(Body::from(TEST_BODY))
+                .expect("failed to build request");
+
+            let response = router
+                .oneshot(request)
+                .await
+                .expect("service should return a response");
+
+            assert_eq!(response.status(), StatusCode::OK);
+
+            let recorded = stub.recorded_requests();
+            let forwarded = recorded.first().expect("expected a recorded request");
+
+            assert_eq!(forwarded.uri.path(), "/some/path");
         }
     }
 }

@@ -10,7 +10,7 @@ use axum::{
     response::{IntoResponse as _, Response},
 };
 
-use crate::server::server_state::ServerState;
+use crate::server::state::server_state::ServerState;
 
 /// Base URI for the Kobo API.
 const KOBO_API_BASE_URI: &str = "storeapi.kobo.com";
