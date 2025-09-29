@@ -38,7 +38,7 @@ pub async fn log_requests(
     let bytes = buffer(body).await?;
 
     let encoding_type: EncodingType = parts.headers.get("content-encoding").into();
-    let body_repr = match body_display(&bytes, &encoding_type) {
+    let body_repr = match decode_http_body(&bytes, &encoding_type) {
         Ok(body) => body,
         Err(e) => {
             tracing::warn!("Failed to decode request body: {e}");
@@ -81,7 +81,7 @@ pub async fn log_responses(
     let bytes = buffer(body).await?;
     let encoding_type: EncodingType = parts.headers.get("content-encoding").into();
 
-    let body_repr = match body_display(&bytes, &encoding_type) {
+    let body_repr = match decode_http_body(&bytes, &encoding_type) {
         Ok(body) => body,
         Err(e) => {
             tracing::warn!("Failed to decode response body: {e}");
@@ -169,7 +169,7 @@ impl From<Option<&hyper::header::HeaderValue>> for EncodingType {
 ///
 /// Returns an error if gzip-compressed content cannot be decompressed or
 /// if the decompressed content is not valid UTF-8.
-fn body_display<'a>(bytes: &'a Bytes, encoding_type: &EncodingType) -> Result<Cow<'a, str>> {
+fn decode_http_body<'a>(bytes: &'a Bytes, encoding_type: &EncodingType) -> Result<Cow<'a, str>> {
     match encoding_type {
         EncodingType::Gzip => {
             let mut gz = GzDecoder::new(&bytes[..]);

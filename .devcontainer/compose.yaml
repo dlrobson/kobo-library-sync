@@ -1,4 +1,4 @@
-name: kobo-library-sync-${USER:?}
+name: kobo-library-sync-${PWD:?}
 
 services:
   devcontainer:
