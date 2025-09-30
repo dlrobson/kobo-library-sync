@@ -96,13 +96,8 @@ jobs:
 
       - name: Generate coverage reports
         run: |
-          # Define common grcov arguments
-          GRCOV_ARGS="--branch -s . --binary-path ./target/ --ignore crates/*/tests/* --keep-only crates/** --ignore-not-existing"
-          
-          # Generate Cobertura XML for CI integration
+          GRCOV_ARGS="--branch -s . --binary-path ./target/ --ignore 'crates/*/tests/*' --keep-only 'crates/**' --ignore-not-existing"
           grcov . $GRCOV_ARGS -t cobertura -o coverage.xml
-          
-          # Generate HTML for human-readable reports
           grcov . $GRCOV_ARGS -t html -o coverage-html
 
       - name: Upload HTML coverage report
