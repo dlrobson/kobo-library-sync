@@ -96,15 +96,17 @@ jobs:
 
       - name: Generate coverage reports
         run: |
-          GRCOV_ARGS="--branch -s . --binary-path ./target/ --ignore 'crates/*/tests/*' --keep-only 'crates/**' --ignore-not-existing"
-          grcov . $GRCOV_ARGS -t cobertura -o coverage.xml
-          grcov . $GRCOV_ARGS -t html -o coverage-html
+          GRCOV_ARGS="--log-level DEBUG --branch -s . --binary-path ./target/"
+          # --ignore 'crates/*/tests/*' --keep-only 'crates/**' --ignore-not-existing
+          echo "GRCOV_ARGS: $GRCOV_ARGS"
+          grcov . $GRCOV_ARGS -t cobertura,html
+          ls
 
-      - name: Upload HTML coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-html
-          path: coverage-html
+      # - name: Upload HTML coverage report
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: coverage-html
+      #     path: coverage-html
 
       - name: Code Coverage Summary
         uses: irongut/CodeCoverageSummary@v1.3.0
