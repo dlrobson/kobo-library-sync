@@ -94,13 +94,22 @@ jobs:
         with:
           tool: grcov@0.8
 
-      - name: Generate cobertura coverage file
+      - name: Generate coverage reports
         run: |
-          grcov . \
-            --branch -s . --binary-path ./target/ \
-            -t cobertura -o coverage.xml \
-            --ignore "crates/*/tests/*" \
-            --keep-only "crates/**" --ignore-not-existing
+          # Define common grcov arguments
+          GRCOV_ARGS="--branch -s . --binary-path ./target/ --ignore crates/*/tests/* --keep-only crates/** --ignore-not-existing"
+          
+          # Generate Cobertura XML for CI integration
+          grcov . $GRCOV_ARGS -t cobertura -o coverage.xml
+          
+          # Generate HTML for human-readable reports
+          grcov . $GRCOV_ARGS -t html -o coverage-html
+
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage-html
 
       - name: Code Coverage Summary
         uses: irongut/CodeCoverageSummary@v1.3.0
