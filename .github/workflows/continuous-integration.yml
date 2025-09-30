@@ -97,9 +97,7 @@ jobs:
 
       - name: Generate coverage reports
         run: |
-          pwd
           mkdir -p $COVERAGE_DIR
-          ls
           grcov . \
             --branch -s . --binary-path ./target/ \
             --output-types cobertura,html,markdown --output-path $COVERAGE_DIR \
