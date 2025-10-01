@@ -19,19 +19,23 @@ pub struct ServerState {
 }
 
 impl ServerState {
-    /// Creates a new instance of the application state
+    /// Creates a new instance of the application state with a production HTTP client
     pub fn new() -> Self {
         let client: Client<HttpsConnector<HttpConnector>, Body> =
             Client::builder(TokioExecutor::new()).build(HttpsConnector::new());
 
-        Self {
-            client: Arc::new(client),
-        }
+        let client: Arc<dyn KoboClient> = Arc::new(client);
+
+        Self { client }
     }
 
-    /// Creates a new instance with the provided client implementation.
     #[cfg(test)]
-    pub fn with_client(client: Arc<dyn KoboClient>) -> Self {
-        Self { client }
+    /// Creates a new instance with a stub client for testing
+    /// Returns both the `ServerState` and the `StubKoboClient` for test access
+    pub fn new_null() -> (Self, Arc<crate::server::StubKoboClient>) {
+        use crate::server::StubKoboClient;
+        let stub = Arc::new(StubKoboClient::new());
+        let client: Arc<dyn KoboClient> = stub.clone();
+        (Self { client }, stub)
     }
 }

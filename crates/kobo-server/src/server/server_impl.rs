@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
-use crate::server::router::create_router;
+use crate::server::{router::create_router, state::server_state::ServerState};
 
 /// Server struct that manages the Axum server lifecycle
 pub struct Server {
@@ -29,7 +29,11 @@ impl Server {
         enable_request_logging: bool,
         enable_response_logging: bool,
     ) -> anyhow::Result<Self> {
-        let app = create_router(enable_request_logging, enable_response_logging);
+        let app = create_router(
+            enable_request_logging,
+            enable_response_logging,
+            ServerState::new(),
+        );
         let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
         let address = listener.local_addr()?;
 

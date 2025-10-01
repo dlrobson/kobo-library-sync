@@ -10,10 +10,7 @@ use axum::{
     response::{IntoResponse as _, Response},
 };
 
-use crate::server::state::server_state::ServerState;
-
-/// Base URI for the Kobo API.
-const KOBO_API_BASE_URI: &str = "storeapi.kobo.com";
+use crate::server::{routes::constants::KOBO_API_BASE_URI, state::server_state::ServerState};
 
 /// Generate URI parts for the Kobo API given a path and query string.
 fn generate_kobo_uri_parts(path_and_query: &str) -> Result<Parts> {
@@ -37,7 +34,7 @@ fn generate_kobo_uri(path_and_query: &str) -> Result<Uri> {
 ///
 /// Returns a `hyper::StatusCode` error if the request could not be forwarded
 /// or if the URI is invalid.
-pub async fn kobo_store_fallback(
+pub async fn kobo_store_request(
     server_state: State<ServerState>,
     mut request: Request,
 ) -> Result<Response, hyper::StatusCode> {

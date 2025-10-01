@@ -1,45 +1,40 @@
 //! The Router module for the Kobo server, defining routes and middleware.
 
-use axum::{Router, middleware};
+use axum::{Router, middleware, routing::get};
 use tower::ServiceBuilder;
 use tower_http::normalize_path::NormalizePathLayer;
 
 use crate::server::{
-    middleware::{kobo_store_fallback::kobo_store_fallback, request_logging},
+    middleware::request_logging,
+    routes::{initialization::initialization_handler, kobo_store_request::kobo_store_request},
     state::server_state::ServerState,
 };
 
 /// Creates and configures the Axum router with default server state.
-pub fn create_router(enable_request_logging: bool, enable_response_logging: bool) -> Router {
-    create_router_with_state(
-        enable_request_logging,
-        enable_response_logging,
-        ServerState::new(),
-    )
-}
-
-/// Creates and configures the Axum router using the provided state.
-fn create_router_with_state(
+pub fn create_router(
     enable_request_logging: bool,
     enable_response_logging: bool,
-    state: ServerState,
+    server_state: ServerState,
 ) -> Router {
-    let router = Router::new().fallback(kobo_store_fallback).layer(
-        ServiceBuilder::new()
-            // Removes double leading slashes and removes trailing slashes. The Kobo device always
-            // sends a double leading slash in its requests (e.g., "//library"), so we normalize the
-            // path to ensure consistent routing.
-            .layer(NormalizePathLayer::trim_trailing_slash())
-            .option_layer(
-                enable_request_logging.then(|| middleware::from_fn(request_logging::log_requests)),
-            )
-            .option_layer(
-                enable_response_logging
-                    .then(|| middleware::from_fn(request_logging::log_responses)),
-            ),
-    );
-
-    router.with_state(state)
+    Router::new()
+        .route("/v1/initialization", get(initialization_handler))
+        .fallback(kobo_store_request)
+        .layer(
+            ServiceBuilder::new()
+                // Removes double leading slashes and removes trailing slashes. The Kobo device always
+                // sends a double leading slash in its requests (e.g., "//library"), so we normalize the
+                // path to ensure consistent routing.
+                .layer(NormalizePathLayer::trim_trailing_slash())
+                .option_layer(
+                    enable_request_logging
+                        .then(|| middleware::from_fn(request_logging::log_requests)),
+                )
+                .option_layer(
+                    enable_response_logging
+                        .then(|| middleware::from_fn(request_logging::log_responses)),
+                ),
+        )
+        .with_state(server_state)
 }
 
 #[cfg(test)]
@@ -60,7 +55,7 @@ mod tests {
 
     use super::*;
     use crate::server::StubKoboClient;
-    use crate::server::state::{client::KoboClient, server_state::ServerState};
+    use crate::server::state::server_state::ServerState;
 
     const TEST_BODY: &str = "test body";
     const TEST_RESPONSE: &str = "stubbed response";
@@ -84,11 +79,9 @@ mod tests {
         enable_request_logging: bool,
         enable_response_logging: bool,
     ) -> (Router, Arc<StubKoboClient>) {
-        let stub = Arc::new(StubKoboClient::new());
-        let client: Arc<dyn KoboClient> = stub.clone();
-        let state = ServerState::with_client(client);
+        let (state, stub) = ServerState::new_null();
         (
-            create_router_with_state(enable_request_logging, enable_response_logging, state),
+            create_router(enable_request_logging, enable_response_logging, state),
             stub,
         )
     }
