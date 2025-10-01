@@ -4,18 +4,18 @@
 //! HTTP requests and outgoing HTTP responses, including their headers and body
 //! content. The middleware supports both plain text and gzip-compressed content.
 
-use std::{borrow::Cow, io::Read as _};
+use std::borrow::Cow;
 
 use anyhow::Result;
 use axum::{
-    body::{Body, Bytes, HttpBody},
+    body::Body,
     extract::Request,
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use flate2::read::GzDecoder;
-use http_body_util::BodyExt as _;
 use hyper::StatusCode;
+
+use crate::server::utils::http_body::{buffer_body, decode_response_body, is_gzip_encoded};
 
 /// Middleware function that logs incoming HTTP requests.
 ///
@@ -35,10 +35,10 @@ pub async fn log_requests(
     next: Next,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let (parts, body) = request.into_parts();
-    let bytes = buffer(body).await?;
+    let bytes = buffer_body(body).await?;
 
-    let encoding_type: EncodingType = parts.headers.get("content-encoding").into();
-    let body_repr = match decode_http_body(&bytes, &encoding_type) {
+    let is_gzipped = is_gzip_encoded(&parts.headers);
+    let body_repr = match decode_response_body(&bytes, is_gzipped) {
         Ok(body) => body,
         Err(e) => {
             tracing::warn!("Failed to decode request body: {e}");
@@ -78,10 +78,10 @@ pub async fn log_responses(
     let res = next.run(request).await;
 
     let (parts, body) = res.into_parts();
-    let bytes = buffer(body).await?;
-    let encoding_type: EncodingType = parts.headers.get("content-encoding").into();
+    let bytes = buffer_body(body).await?;
+    let is_gzipped = is_gzip_encoded(&parts.headers);
 
-    let body_repr = match decode_http_body(&bytes, &encoding_type) {
+    let body_repr = match decode_response_body(&bytes, is_gzipped) {
         Ok(body) => body,
         Err(e) => {
             tracing::warn!("Failed to decode response body: {e}");
@@ -101,83 +101,106 @@ pub async fn log_responses(
     Ok(res)
 }
 
-/// Buffers the entire HTTP body into memory for inspection.
-///
-/// This helper function collects all bytes from an HTTP body stream,
-/// allowing the body content to be logged while preserving it for
-/// further processing.
-///
-/// # Returns
-///
-/// Returns the body content as `Bytes`.
-///
-/// # Errors
-///
-/// Returns a tuple containing an HTTP status code and error message if the body cannot be read.
-async fn buffer<B>(body: B) -> Result<Bytes, (StatusCode, String)>
-where
-    B: HttpBody<Data = Bytes>,
-    B::Error: std::fmt::Display,
-{
-    let bytes = match body.collect().await {
-        Ok(collected) => collected.to_bytes(),
-        Err(err) => {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to read body: {err}"),
-            ));
-        }
+#[cfg(test)]
+mod tests {
+    use std::io::Write as _;
+
+    use axum::{
+        body::Body,
+        http::{Request, Response, StatusCode},
     };
+    use flate2::{Compression, write::GzEncoder};
+    use tower::ServiceExt as _;
+    use tracing_test::traced_test;
 
-    Ok(bytes)
-}
+    use crate::server::{router::create_router, state::server_state::ServerState};
 
-/// Represents the encoding type of HTTP body content.
-#[derive(PartialEq)]
-enum EncodingType {
-    /// Gzip-compressed content
-    Gzip,
-    /// Plain text content
-    Plain,
-}
+    const TEST_BODY: &str = "test body";
+    const TEST_RESPONSE: &str = "stubbed response";
 
-impl From<Option<&hyper::header::HeaderValue>> for EncodingType {
-    /// Converts an HTTP Content-Encoding header value to an `EncodingType`.
-    ///
-    /// # Returns
-    ///
-    /// Returns `EncodingType::Gzip` if the header indicates gzip encoding,
-    /// otherwise returns `EncodingType::Plain`.
-    fn from(value: Option<&hyper::header::HeaderValue>) -> Self {
-        match value {
-            Some(v) if v == hyper::header::HeaderValue::from_static("gzip") => EncodingType::Gzip,
-            _ => EncodingType::Plain,
-        }
+    fn build_request() -> Request<Body> {
+        Request::builder()
+            .uri("/")
+            .body(Body::from(TEST_BODY))
+            .expect("failed to build request")
     }
-}
 
-/// Converts HTTP body bytes to a displayable string, handling different encodings.
-///
-/// This function returns a `Cow<'a, str>` that is either a borrowed reference to the plain text
-/// or an owned string containing the decompressed Gzip content.
-///
-/// # Returns
-///
-/// Returns a `Cow<'a, str>` containing the decoded body content.
-///
-/// # Errors
-///
-/// Returns an error if gzip-compressed content cannot be decompressed or
-/// if the decompressed content is not valid UTF-8.
-fn decode_http_body<'a>(bytes: &'a Bytes, encoding_type: &EncodingType) -> Result<Cow<'a, str>> {
-    match encoding_type {
-        EncodingType::Gzip => {
-            let mut gz = GzDecoder::new(&bytes[..]);
-            let mut s = String::new();
-            gz.read_to_string(&mut s)?;
+    fn gzip_bytes(input: &str) -> Vec<u8> {
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder
+            .write_all(input.as_bytes())
+            .expect("failed to write gzip contents");
+        encoder.finish().expect("failed to finish gzip encoding")
+    }
 
-            Ok(Cow::Owned(s))
-        }
-        EncodingType::Plain => Ok(String::from_utf8_lossy(bytes)),
+    #[tokio::test]
+    #[traced_test]
+    async fn request_logging_layer_logs_requests() {
+        let (state, stub) = ServerState::new_null();
+        let router = create_router(true, false, state);
+
+        stub.enqueue_response(
+            Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from(TEST_RESPONSE))
+                .expect("failed to build stub response"),
+        );
+
+        let response = router
+            .oneshot(build_request())
+            .await
+            .expect("service should return a response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(logs_contain("Incoming Request"));
+        assert!(logs_contain(TEST_BODY));
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn response_logging_layer_logs_responses() {
+        let (state, stub) = ServerState::new_null();
+        let router = create_router(false, true, state);
+
+        stub.enqueue_response(
+            Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from(TEST_RESPONSE))
+                .expect("failed to build stub response"),
+        );
+
+        let response = router
+            .oneshot(build_request())
+            .await
+            .expect("service should return a response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(logs_contain("Outgoing Response"));
+        assert!(logs_contain(TEST_RESPONSE));
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn response_logging_layer_handles_gzip_body() {
+        let (state, stub) = ServerState::new_null();
+        let router = create_router(false, true, state);
+
+        let gzip_body = gzip_bytes(TEST_RESPONSE);
+        stub.enqueue_response(
+            Response::builder()
+                .status(StatusCode::OK)
+                .header("content-encoding", "gzip")
+                .body(Body::from(gzip_body))
+                .expect("failed to build stub response"),
+        );
+
+        let response = router
+            .oneshot(build_request())
+            .await
+            .expect("service should return a response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(logs_contain("Outgoing Response"));
+        assert!(logs_contain(TEST_RESPONSE));
     }
 }
