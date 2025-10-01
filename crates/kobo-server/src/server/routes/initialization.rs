@@ -14,8 +14,9 @@ use crate::server::{
     },
 };
 
-/// Handler for the `/v1/initialization` endpoint. This is the initialization route for Kobo devices.
-/// It forwards the request to the Kobo API, modifies the response to replace Kobo URLs with the server's URL,
+/// Handler for the `/v1/initialization` endpoint. This is the initialization route for Kobo
+/// devices. It forwards the request to the Kobo API, modifies the response to replace Kobo URLs
+/// with the server's URL,
 ///
 /// # Errors
 ///
@@ -28,7 +29,7 @@ pub async fn initialization_handler(
         .uri()
         .scheme_str()
         .zip(request.uri().authority())
-        .map(|(scheme, authority)| format!("{}://{}", scheme, authority))
+        .map(|(scheme, authority)| format!("{scheme}://{authority}"))
         .ok_or_else(|| {
             tracing::error!("Failed to extract scheme and authority from request URI");
             StatusCode::INTERNAL_SERVER_ERROR

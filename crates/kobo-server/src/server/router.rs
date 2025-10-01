@@ -21,9 +21,10 @@ pub fn create_router(
         .fallback(kobo_store_request)
         .layer(
             ServiceBuilder::new()
-                // Removes double leading slashes and removes trailing slashes. The Kobo device always
-                // sends a double leading slash in its requests (e.g., "//library"), so we normalize the
-                // path to ensure consistent routing.
+                // Removes double leading slashes and removes trailing slashes. The Kobo device
+                // always sends a double leading slash in its requests (e.g.,
+                // "//library"), so we normalize the path to ensure consistent
+                // routing.
                 .layer(NormalizePathLayer::trim_trailing_slash())
                 .option_layer(
                     enable_request_logging
