@@ -16,7 +16,7 @@ use crate::server::{
 
 /// Handler for the `/v1/initialization` endpoint. This is the initialization route for Kobo
 /// devices. It forwards the request to the Kobo API, modifies the response to replace Kobo URLs
-/// with the server's URL,
+/// with the server's URL, ensuring that all device communications are routed through this server.
 ///
 /// # Errors
 ///

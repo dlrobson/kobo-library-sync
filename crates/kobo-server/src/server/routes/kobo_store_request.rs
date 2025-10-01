@@ -70,3 +70,177 @@ pub async fn kobo_store_request(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use anyhow::anyhow;
+    use axum::{
+        body::Body,
+        http::{Request, Response, StatusCode, header::HOST},
+    };
+    use http_body_util::BodyExt as _;
+    use hyper::Method;
+    use tower::ServiceExt as _;
+
+    use crate::server::{StubKoboClient, router::create_router, state::server_state::ServerState};
+
+    const TEST_BODY: &str = "test body";
+    const TEST_RESPONSE: &str = "stubbed response";
+
+    fn build_request() -> Request<Body> {
+        Request::builder()
+            .uri("/")
+            .body(Body::from(TEST_BODY))
+            .expect("failed to build request")
+    }
+
+    fn build_router_with_stub() -> (axum::Router, Arc<StubKoboClient>) {
+        let (state, stub) = ServerState::new_null();
+        (create_router(false, false, state), stub)
+    }
+
+    #[tokio::test]
+    async fn fallback_returns_stubbed_response() {
+        let (router, stub) = build_router_with_stub();
+        stub.enqueue_response(
+            Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from(TEST_RESPONSE))
+                .expect("failed to build stub response"),
+        );
+
+        let response = router
+            .oneshot(build_request())
+            .await
+            .expect("service should return a response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], TEST_RESPONSE.as_bytes());
+    }
+
+    #[tokio::test]
+    async fn fallback_overwrites_host_header_for_forwarded_requests() {
+        let (router, stub) = build_router_with_stub();
+        stub.enqueue_response(
+            Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from(TEST_RESPONSE))
+                .expect("failed to build stub response"),
+        );
+
+        let response = router
+            .oneshot(build_request())
+            .await
+            .expect("service should return a response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let recorded = stub.recorded_requests();
+        let forwarded = recorded.first().expect("expected a recorded request");
+
+        assert_eq!(
+            forwarded.uri.authority().unwrap().as_str(),
+            "storeapi.kobo.com"
+        );
+        assert_eq!(forwarded.uri.scheme_str(), Some("https"));
+        let host_header = forwarded
+            .headers
+            .get(HOST)
+            .expect("host header should be set");
+        assert_eq!(host_header, "storeapi.kobo.com");
+        assert_eq!(forwarded.method, Method::GET);
+        assert_eq!(forwarded.body, TEST_BODY.as_bytes());
+    }
+
+    #[tokio::test]
+    async fn fallback_removes_transfer_encoding_header() {
+        let (router, stub) = build_router_with_stub();
+        stub.enqueue_response(
+            Response::builder()
+                .status(StatusCode::OK)
+                .header("transfer-encoding", "chunked")
+                .body(Body::from(TEST_RESPONSE))
+                .expect("failed to build stub response"),
+        );
+
+        let response = router
+            .oneshot(build_request())
+            .await
+            .expect("service should return a response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(response.headers().get("transfer-encoding").is_none());
+    }
+
+    #[tokio::test]
+    async fn fallback_returns_bad_gateway_when_client_errors() {
+        let (router, stub) = build_router_with_stub();
+        stub.enqueue_error(anyhow!("stubbed failure"));
+
+        let response = router
+            .oneshot(build_request())
+            .await
+            .expect("service should return a response");
+
+        assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+    }
+
+    #[tokio::test]
+    async fn multiple_leading_slashes_are_normalized() {
+        let (router, stub) = build_router_with_stub();
+        stub.enqueue_response(
+            Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from(TEST_RESPONSE))
+                .expect("failed to build stub response"),
+        );
+
+        let request = Request::builder()
+            .uri("///some/path")
+            .body(Body::from(TEST_BODY))
+            .expect("failed to build request");
+
+        let response = router
+            .oneshot(request)
+            .await
+            .expect("service should return a response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let recorded = stub.recorded_requests();
+        let forwarded = recorded.first().expect("expected a recorded request");
+
+        assert_eq!(forwarded.uri.path(), "/some/path");
+    }
+
+    #[tokio::test]
+    async fn trailing_slash_is_removed() {
+        let (router, stub) = build_router_with_stub();
+        stub.enqueue_response(
+            Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from(TEST_RESPONSE))
+                .expect("failed to build stub response"),
+        );
+
+        let request = Request::builder()
+            .uri("/some/path//")
+            .body(Body::from(TEST_BODY))
+            .expect("failed to build request");
+
+        let response = router
+            .oneshot(request)
+            .await
+            .expect("service should return a response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let recorded = stub.recorded_requests();
+        let forwarded = recorded.first().expect("expected a recorded request");
+
+        assert_eq!(forwarded.uri.path(), "/some/path");
+    }
+}
