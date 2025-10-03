@@ -117,7 +117,9 @@ mod tests {
     #[traced_test]
     async fn request_logging_layer_logs_requests() {
         let stub = Arc::new(StubKoboClient::new());
-        let state = ServerState::builder().client(stub.clone()).build();
+        let state = ServerState::builder("http://frontend.test")
+            .client(stub.clone())
+            .build();
         let router = create_router(true, false, state);
 
         stub.enqueue_response(
@@ -141,7 +143,9 @@ mod tests {
     #[traced_test]
     async fn response_logging_layer_logs_responses() {
         let stub = Arc::new(StubKoboClient::new());
-        let state = ServerState::builder().client(stub.clone()).build();
+        let state = ServerState::builder("http://frontend.test")
+            .client(stub.clone())
+            .build();
         let router = create_router(false, true, state);
 
         stub.enqueue_response(
@@ -165,7 +169,9 @@ mod tests {
     #[traced_test]
     async fn response_logging_layer_handles_gzip_body() {
         let stub = Arc::new(StubKoboClient::new());
-        let state = ServerState::builder().client(stub.clone()).build();
+        let state = ServerState::builder("http://frontend.test")
+            .client(stub.clone())
+            .build();
         let router = create_router(false, true, state);
 
         let gzip_body = gzip_bytes(TEST_RESPONSE);

@@ -103,7 +103,9 @@ mod tests {
 
     fn build_router_with_stub() -> (NormalizePath<Router<()>>, Arc<StubKoboClient>) {
         let stub = Arc::new(StubKoboClient::new());
-        let state = ServerState::builder().client(stub.clone()).build();
+        let state = ServerState::builder("http://frontend.test")
+            .client(stub.clone())
+            .build();
         (create_router(false, false, state), stub)
     }
 

@@ -31,7 +31,7 @@ impl Server {
         enable_request_logging: bool,
         enable_response_logging: bool,
     ) -> anyhow::Result<Self> {
-        let app_state = ServerState::builder().frontend_url(frontend_url).build();
+    let app_state = ServerState::builder(frontend_url).build();
         let app = create_router(enable_request_logging, enable_response_logging, app_state);
         let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
         let address = listener.local_addr()?;

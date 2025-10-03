@@ -51,8 +51,7 @@ mod tests {
         let compressed_json = compress_gzip(original_json).expect("Failed to compress JSON");
         let configured_frontend = "http://placeholder.local";
         let stub = Arc::new(StubKoboClient::new());
-        let state = ServerState::builder()
-            .frontend_url(configured_frontend)
+        let state = ServerState::builder(configured_frontend)
             .client(stub.clone())
             .build();
         let router = create_router(false, false, state);
@@ -93,8 +92,7 @@ mod tests {
         let original_json = r#"{"Resources":{"library_sync":"https://storeapi.kobo.com/v1/library/sync","user_profile":"https://storeapi.kobo.com/v1/user/profile"}}"#;
         let configured_frontend = "https://frontend.example";
         let stub = Arc::new(StubKoboClient::new());
-        let state = ServerState::builder()
-            .frontend_url(configured_frontend)
+        let state = ServerState::builder(configured_frontend)
             .client(stub.clone())
             .build();
         let router = create_router(false, false, state);

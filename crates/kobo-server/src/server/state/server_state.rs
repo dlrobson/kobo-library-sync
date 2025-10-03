@@ -21,26 +21,22 @@ pub struct ServerState {
 }
 
 impl ServerState {
-    /// Start building a `ServerState` using the builder pattern.
-    pub fn builder() -> ServerStateBuilder {
-        ServerStateBuilder::default()
+    /// Start building a `ServerState` with a required frontend URL (scheme + host[:port]).
+    pub fn builder(frontend_url: impl Into<String>) -> ServerStateBuilder {
+        ServerStateBuilder {
+            frontend_url: frontend_url.into(),
+            client: None,
+        }
     }
 }
 
 /// Builder for `ServerState`.
-#[derive(Default)]
 pub struct ServerStateBuilder {
-    frontend_url: Option<String>,
+    frontend_url: String,
     client: Option<Arc<dyn KoboClient>>,
 }
 
 impl ServerStateBuilder {
-    /// Set the frontend URL (scheme + host\[:port\]).
-    pub fn frontend_url(mut self, url: impl Into<String>) -> Self {
-        self.frontend_url = Some(url.into());
-        self
-    }
-
     /// Provide a custom HTTP client (e.g. test stub).
     #[cfg(test)]
     pub fn client(mut self, client: Arc<dyn KoboClient>) -> Self {
@@ -50,9 +46,7 @@ impl ServerStateBuilder {
 
     /// Build the `ServerState`.
     pub fn build(self) -> ServerState {
-        let frontend_url = self
-            .frontend_url
-            .unwrap_or_else(|| "http://localhost".to_string());
+        let frontend_url = self.frontend_url;
 
         let client = if let Some(client) = self.client {
             client
@@ -76,15 +70,14 @@ mod tests {
 
     #[test]
     fn builder_sets_frontend_url() {
-        let state = ServerState::builder()
-            .frontend_url("https://example.test")
-            .build();
+        let state = ServerState::builder("https://example.test").build();
         assert_eq!(state.frontend_url, "https://example.test");
     }
 
     #[test]
     fn builder_defaults_frontend_url() {
-        let state = ServerState::builder().build();
-        assert_eq!(state.frontend_url, "http://localhost");
+        // No implicit default anymore; test explicit usage
+        let state = ServerState::builder("http://localhost:1234").build();
+        assert_eq!(state.frontend_url, "http://localhost:1234");
     }
 }

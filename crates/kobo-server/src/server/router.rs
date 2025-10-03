@@ -56,7 +56,9 @@ mod tests {
     #[tokio::test]
     async fn multiple_leading_and_trailing_slashes_are_normalized_by_layer() {
         let stub = Arc::new(StubKoboClient::new());
-        let state = ServerState::builder().client(stub.clone()).build();
+        let state = ServerState::builder("http://frontend.test")
+            .client(stub.clone())
+            .build();
         stub.enqueue_response(
             axum::http::Response::builder()
                 .status(200)
