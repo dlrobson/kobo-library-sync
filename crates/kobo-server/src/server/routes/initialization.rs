@@ -5,10 +5,9 @@ use axum::response::Response;
 use crate::server::{
     routes::{constants::KOBO_API_URL, kobo_store_request::kobo_store_request},
     state::server_state::ServerState,
-};
-
-use crate::server::utils::http_body::{
-    decode_response_body, encode_response_body, is_gzip_encoded, read_response_body,
+    utils::http_body::{
+        decode_response_body, encode_response_body, is_gzip_encoded, read_response_body,
+    },
 };
 
 /// Handler for the `/v1/initialization` endpoint. Forwards to Kobo API and rewrites
@@ -30,13 +29,14 @@ pub async fn initialization_handler(
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use axum::{
         body::Body,
         http::{Request, Response, StatusCode},
     };
     use http_body_util::BodyExt as _;
     use hyper::Method;
-    use std::sync::Arc;
     use tower::ServiceExt as _;
 
     use crate::server::{

@@ -41,8 +41,9 @@ pub fn create_router(
 
 #[cfg(test)]
 mod tests {
-    use axum::{body::Body, http::Request};
     use std::sync::Arc;
+
+    use axum::{body::Body, http::Request};
     use tower::ServiceExt as _;
 
     use super::*;
@@ -50,8 +51,7 @@ mod tests {
         client::stub_kobo_client::StubKoboClient, server_state::ServerState,
     };
 
-    // Simple handler to echo the normalized path back (we reuse the fallback which will forward
-    // but here we just ensure normalization triggers routing to fallback with expected path).
+    // Ensure normalization layer rewrites multiple leading/trailing slashes before forwarding.
 
     #[tokio::test]
     async fn multiple_leading_and_trailing_slashes_are_normalized_by_layer() {
@@ -76,7 +76,8 @@ mod tests {
             .expect("router should respond");
         assert_eq!(response.status(), 200);
         // We can't directly read normalized path from response, but normalization allowed fallback
-        // to match and stub to be consumed. Indirect evidence: stub saw request with normalized path.
+        // to match and stub to be consumed. Indirect evidence: stub saw request with normalized
+        // path.
         let recorded = stub.recorded_requests();
         let forwarded = recorded.first().expect("expected forwarded request");
         assert_eq!(forwarded.uri.path(), "/some/path");

@@ -27,7 +27,7 @@ impl ServerState {
     }
 }
 
-/// Builder for `ServerState` allowing customization during construction.
+/// Builder for `ServerState`.
 #[derive(Default)]
 pub struct ServerStateBuilder {
     frontend_url: Option<String>,
@@ -35,7 +35,7 @@ pub struct ServerStateBuilder {
 }
 
 impl ServerStateBuilder {
-    /// Set the frontend URL (scheme + host[:port]).
+    /// Set the frontend URL (scheme + host\[:port\]).
     pub fn frontend_url(mut self, url: impl Into<String>) -> Self {
         self.frontend_url = Some(url.into());
         self
