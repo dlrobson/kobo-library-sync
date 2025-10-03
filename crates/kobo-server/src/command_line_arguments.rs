@@ -7,19 +7,20 @@ use clap::Parser;
 #[command(author, version, about, long_about = None)]
 pub struct CommandLineArguments {
     /// The log level for the application.
-    #[arg(short, long, default_value = "info")]
+    #[arg(short, long, default_value = "info", env)]
     pub log_level: String,
-
     /// The port to listen on.
-    #[arg(short, long, default_value_t = 8089)]
+    #[arg(short, long, default_value_t = 8089, env)]
     pub port: u16,
-
+    /// The front end URL the application will be accessed from. This is used
+    /// to generate URLs in responses to Kobo devices.
+    #[arg(short, long, env)]
+    pub frontend_url: Option<String>,
     /// Enable request logging middleware.
-    #[arg(short = 'q', long, default_value_t = false)]
+    #[arg(short = 'q', long, default_value_t = false, env)]
     pub enable_request_logging: bool,
-
     /// Enable response logging middleware.
-    #[arg(short = 'r', long, default_value_t = false)]
+    #[arg(short = 'r', long, default_value_t = false, env)]
     pub enable_response_logging: bool,
 }
 

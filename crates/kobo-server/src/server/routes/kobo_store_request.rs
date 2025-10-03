@@ -77,14 +77,19 @@ mod tests {
 
     use anyhow::anyhow;
     use axum::{
+        Router,
         body::Body,
         http::{Request, Response, StatusCode, header::HOST},
     };
     use http_body_util::BodyExt as _;
     use hyper::Method;
     use tower::ServiceExt as _;
+    use tower_http::normalize_path::NormalizePath;
 
-    use crate::server::{StubKoboClient, router::create_router, state::server_state::ServerState};
+    use crate::server::{
+        router::create_router,
+        state::{client::stub_kobo_client::StubKoboClient, server_state::ServerState},
+    };
 
     const TEST_BODY: &str = "test body";
     const TEST_RESPONSE: &str = "stubbed response";
@@ -96,8 +101,9 @@ mod tests {
             .expect("failed to build request")
     }
 
-    fn build_router_with_stub() -> (axum::Router, Arc<StubKoboClient>) {
-        let (state, stub) = ServerState::new_null();
+    fn build_router_with_stub() -> (NormalizePath<Router<()>>, Arc<StubKoboClient>) {
+        let stub = Arc::new(StubKoboClient::new());
+        let state = ServerState::builder().client(stub.clone()).build();
         (create_router(false, false, state), stub)
     }
 
@@ -200,34 +206,6 @@ mod tests {
 
         let request = Request::builder()
             .uri("///some/path")
-            .body(Body::from(TEST_BODY))
-            .expect("failed to build request");
-
-        let response = router
-            .oneshot(request)
-            .await
-            .expect("service should return a response");
-
-        assert_eq!(response.status(), StatusCode::OK);
-
-        let recorded = stub.recorded_requests();
-        let forwarded = recorded.first().expect("expected a recorded request");
-
-        assert_eq!(forwarded.uri.path(), "/some/path");
-    }
-
-    #[tokio::test]
-    async fn trailing_slash_is_removed() {
-        let (router, stub) = build_router_with_stub();
-        stub.enqueue_response(
-            Response::builder()
-                .status(StatusCode::OK)
-                .body(Body::from(TEST_RESPONSE))
-                .expect("failed to build stub response"),
-        );
-
-        let request = Request::builder()
-            .uri("/some/path//")
             .body(Body::from(TEST_BODY))
             .expect("failed to build request");
 

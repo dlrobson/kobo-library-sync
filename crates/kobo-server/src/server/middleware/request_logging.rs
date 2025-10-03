@@ -104,6 +104,7 @@ pub async fn log_responses(
 #[cfg(test)]
 mod tests {
     use std::io::Write as _;
+    use std::sync::Arc;
 
     use axum::{
         body::Body,
@@ -113,7 +114,10 @@ mod tests {
     use tower::ServiceExt as _;
     use tracing_test::traced_test;
 
-    use crate::server::{router::create_router, state::server_state::ServerState};
+    use crate::server::{
+        router::create_router,
+        state::{client::stub_kobo_client::StubKoboClient, server_state::ServerState},
+    };
 
     const TEST_BODY: &str = "test body";
     const TEST_RESPONSE: &str = "stubbed response";
@@ -136,7 +140,8 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn request_logging_layer_logs_requests() {
-        let (state, stub) = ServerState::new_null();
+        let stub = Arc::new(StubKoboClient::new());
+        let state = ServerState::builder().client(stub.clone()).build();
         let router = create_router(true, false, state);
 
         stub.enqueue_response(
@@ -159,7 +164,8 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn response_logging_layer_logs_responses() {
-        let (state, stub) = ServerState::new_null();
+        let stub = Arc::new(StubKoboClient::new());
+        let state = ServerState::builder().client(stub.clone()).build();
         let router = create_router(false, true, state);
 
         stub.enqueue_response(
@@ -182,7 +188,8 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn response_logging_layer_handles_gzip_body() {
-        let (state, stub) = ServerState::new_null();
+        let stub = Arc::new(StubKoboClient::new());
+        let state = ServerState::builder().client(stub.clone()).build();
         let router = create_router(false, true, state);
 
         let gzip_body = gzip_bytes(TEST_RESPONSE);
