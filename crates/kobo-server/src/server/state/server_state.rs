@@ -21,7 +21,7 @@ pub struct ServerState {
 }
 
 impl ServerState {
-    /// Start building a `ServerState` with a required frontend URL (scheme + host[:port]).
+    /// Start building a `ServerState` with a required frontend URL (scheme + host\[:port\]).
     pub fn builder(frontend_url: impl Into<String>) -> ServerStateBuilder {
         ServerStateBuilder {
             frontend_url: frontend_url.into(),
