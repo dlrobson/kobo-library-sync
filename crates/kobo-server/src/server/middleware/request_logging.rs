@@ -17,19 +17,7 @@ use hyper::StatusCode;
 
 use crate::server::utils::http_body::{buffer_body, decode_response_body, is_gzip_encoded};
 
-/// Middleware function that logs incoming HTTP requests.
-///
-/// This middleware captures and logs the HTTP method, URI, headers, and body
-/// of incoming requests. It supports both plain text and gzip-compressed bodies.
-///
-/// # Returns
-///
-/// Returns the response from the next handler in the chain.
-///
-/// # Errors
-///
-/// Returns an
-/// * HTTP 500 Internal Server Error if the request body cannot be read (e.g., IO/buffering error).
+/// Logs an incoming HTTP request (method, URI, headers, body; gzip-aware).
 pub async fn log_requests(
     request: Request,
     next: Next,
@@ -58,19 +46,7 @@ pub async fn log_requests(
     Ok(next.run(req).await)
 }
 
-/// Middleware function that logs outgoing HTTP responses.
-///
-/// This middleware captures and logs the HTTP status code, headers, and body
-/// of outgoing responses. It supports both plain text and gzip-compressed bodies.
-///
-/// # Returns
-///
-/// Returns the response after logging it.
-///
-/// # Errors
-///
-/// Returns a
-/// * HTTP 500 Internal Server Error if the response body cannot be read (e.g., IO/buffering error).
+/// Logs an outgoing HTTP response (status, headers, body; gzip-aware).
 pub async fn log_responses(
     request: Request,
     next: Next,
@@ -104,6 +80,7 @@ pub async fn log_responses(
 #[cfg(test)]
 mod tests {
     use std::io::Write as _;
+    use std::sync::Arc;
 
     use axum::{
         body::Body,
@@ -113,7 +90,10 @@ mod tests {
     use tower::ServiceExt as _;
     use tracing_test::traced_test;
 
-    use crate::server::{router::create_router, state::server_state::ServerState};
+    use crate::server::{
+        router::create_router,
+        state::{client::stub_kobo_client::StubKoboClient, server_state::ServerState},
+    };
 
     const TEST_BODY: &str = "test body";
     const TEST_RESPONSE: &str = "stubbed response";
@@ -136,7 +116,10 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn request_logging_layer_logs_requests() {
-        let (state, stub) = ServerState::new_null();
+        let stub = Arc::new(StubKoboClient::new());
+        let state = ServerState::builder("http://frontend.test")
+            .client(stub.clone())
+            .build();
         let router = create_router(true, false, state);
 
         stub.enqueue_response(
@@ -159,7 +142,10 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn response_logging_layer_logs_responses() {
-        let (state, stub) = ServerState::new_null();
+        let stub = Arc::new(StubKoboClient::new());
+        let state = ServerState::builder("http://frontend.test")
+            .client(stub.clone())
+            .build();
         let router = create_router(false, true, state);
 
         stub.enqueue_response(
@@ -182,7 +168,10 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn response_logging_layer_handles_gzip_body() {
-        let (state, stub) = ServerState::new_null();
+        let stub = Arc::new(StubKoboClient::new());
+        let state = ServerState::builder("http://frontend.test")
+            .client(stub.clone())
+            .build();
         let router = create_router(false, true, state);
 
         let gzip_body = gzip_bytes(TEST_RESPONSE);

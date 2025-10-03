@@ -8,5 +8,3 @@ mod state;
 mod utils;
 
 pub use server_impl::Server;
-#[cfg(test)]
-use state::client::stub_kobo_client::StubKoboClient;

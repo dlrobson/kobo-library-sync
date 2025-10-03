@@ -2,6 +2,7 @@
 
 use std::net::SocketAddr;
 
+use axum::{ServiceExt, body::Body};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
@@ -25,26 +26,27 @@ impl Server {
     /// Returns an error if the server fails to start.
     pub async fn start(
         port: u16,
+        frontend_url: String,
         cancellation_token: CancellationToken,
         enable_request_logging: bool,
         enable_response_logging: bool,
     ) -> anyhow::Result<Self> {
-        let app = create_router(
-            enable_request_logging,
-            enable_response_logging,
-            ServerState::new(),
-        );
+        let app_state = ServerState::builder(frontend_url).build();
+        let app = create_router(enable_request_logging, enable_response_logging, app_state);
         let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
         let address = listener.local_addr()?;
 
         let cancellation_token_clone = cancellation_token.clone();
         let server_handle = tokio::spawn(async move {
-            axum::serve(listener, app)
-                .with_graceful_shutdown(async move {
-                    cancellation_token_clone.cancelled().await;
-                })
-                .await
-                .map_err(Into::into)
+            axum::serve(
+                listener,
+                ServiceExt::<hyper::Request<Body>>::into_make_service(app),
+            )
+            .with_graceful_shutdown(async move {
+                cancellation_token_clone.cancelled().await;
+            })
+            .await
+            .map_err(Into::into)
         });
 
         Ok(Self {
