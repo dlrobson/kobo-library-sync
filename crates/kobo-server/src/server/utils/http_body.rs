@@ -74,14 +74,7 @@ pub async fn read_response_body(
     response: Response,
 ) -> Result<(hyper::http::response::Parts, Bytes), StatusCode> {
     let (parts, body) = response.into_parts();
-
-    let bytes = match body.collect().await {
-        Ok(collected) => collected.to_bytes(),
-        Err(err) => {
-            tracing::error!("Failed to read response body: {err}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+    let bytes = buffer_body(body).await.map_err(|(status, _)| status)?;
 
     Ok((parts, bytes))
 }
