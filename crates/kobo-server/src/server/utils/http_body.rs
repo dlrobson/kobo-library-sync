@@ -31,17 +31,14 @@ where
     B: HttpBody<Data = Bytes>,
     B::Error: std::fmt::Display,
 {
-    let bytes = match body.collect().await {
-        Ok(collected) => collected.to_bytes(),
-        Err(err) => {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to read body: {err}"),
-            ));
-        }
-    };
+    let collected_bytes = body.collect().await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to read body: {e}"),
+        )
+    })?;
 
-    Ok(bytes)
+    Ok(collected_bytes.to_bytes())
 }
 
 /// Decompresses gzip-encoded bytes to a string.
@@ -132,7 +129,10 @@ pub fn encode_response_body(text: &str, should_compress: bool) -> Result<Body, S
 mod tests {
     use std::io::Write as _;
 
-    use axum::{body::Body, http::Response};
+    use axum::{
+        body::Body,
+        http::{HeaderName, HeaderValue, Response},
+    };
     use flate2::{Compression, write::GzEncoder};
     use hyper::{HeaderMap, StatusCode};
 
@@ -141,7 +141,6 @@ mod tests {
     // Test data
     const TEST_TEXT: &str = "Hello, World! This is a test string for compression.";
     const EMPTY_TEXT: &str = "";
-    const UNICODE_TEXT: &str = "Hello 世界! 🌍 Testing unicode characters: αβγ δεζ";
 
     /// Helper function to create gzipped bytes
     fn create_gzipped_bytes(text: &str) -> Vec<u8> {
@@ -153,21 +152,19 @@ mod tests {
     #[tokio::test]
     async fn test_buffer_body_success() {
         let body = Body::from(TEST_TEXT);
-        let result = buffer_body(body).await;
 
-        assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = buffer_body(body).await.unwrap();
+
         assert_eq!(bytes, TEST_TEXT.as_bytes());
     }
 
     #[tokio::test]
     async fn test_buffer_body_empty() {
         let body = Body::empty();
-        let result = buffer_body(body).await;
 
-        assert!(result.is_ok());
-        let bytes = result.unwrap();
-        assert_eq!(bytes.len(), 0);
+        let bytes = buffer_body(body).await.unwrap();
+
+        assert!(bytes.is_empty());
     }
 
     #[test]
@@ -175,19 +172,9 @@ mod tests {
         let compressed = create_gzipped_bytes(TEST_TEXT);
         let bytes = Bytes::from(compressed);
 
-        let result = decompress_gzip(&bytes);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), TEST_TEXT);
-    }
+        let text = decompress_gzip(&bytes).unwrap();
 
-    #[test]
-    fn test_decompress_gzip_unicode() {
-        let compressed = create_gzipped_bytes(UNICODE_TEXT);
-        let bytes = Bytes::from(compressed);
-
-        let result = decompress_gzip(&bytes);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), UNICODE_TEXT);
+        assert_eq!(text, TEST_TEXT);
     }
 
     #[test]
@@ -195,9 +182,9 @@ mod tests {
         let compressed = create_gzipped_bytes(EMPTY_TEXT);
         let bytes = Bytes::from(compressed);
 
-        let result = decompress_gzip(&bytes);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), EMPTY_TEXT);
+        let text = decompress_gzip(&bytes).unwrap();
+
+        assert_eq!(text, EMPTY_TEXT);
     }
 
     #[test]
@@ -206,102 +193,95 @@ mod tests {
         let bytes = Bytes::from(&invalid_data[..]);
 
         let result = decompress_gzip(&bytes);
+
         assert!(result.is_err());
     }
 
     #[test]
     fn test_compress_gzip_success() {
-        let result = compress_gzip(TEST_TEXT);
-        assert!(result.is_ok());
-
-        let compressed = result.unwrap();
-        assert!(!compressed.is_empty());
-
-        // Verify we can decompress it back
+        let compressed = compress_gzip(TEST_TEXT).unwrap();
         let bytes = Bytes::from(compressed);
         let decompressed = decompress_gzip(&bytes).unwrap();
+
         assert_eq!(decompressed, TEST_TEXT);
     }
 
     #[test]
-    fn test_compress_gzip_unicode() {
-        let result = compress_gzip(UNICODE_TEXT);
-        assert!(result.is_ok());
-
-        let compressed = result.unwrap();
-        let bytes = Bytes::from(compressed);
-        let decompressed = decompress_gzip(&bytes).unwrap();
-        assert_eq!(decompressed, UNICODE_TEXT);
-    }
-
-    #[test]
     fn test_compress_gzip_empty() {
-        let result = compress_gzip(EMPTY_TEXT);
-        assert!(result.is_ok());
-
-        let compressed = result.unwrap();
+        let compressed = compress_gzip(EMPTY_TEXT).unwrap();
         let bytes = Bytes::from(compressed);
         let decompressed = decompress_gzip(&bytes).unwrap();
+
         assert_eq!(decompressed, EMPTY_TEXT);
     }
 
     #[tokio::test]
-    async fn test_read_response_body_success() {
+    async fn test_read_response_body_status_ok() {
         let response = Response::builder()
             .status(StatusCode::OK)
             .body(Body::from(TEST_TEXT))
             .unwrap();
 
-        let result = read_response_body(response).await;
-        assert!(result.is_ok());
+        let (parts, _bytes) = read_response_body(response).await.unwrap();
 
-        let (parts, bytes) = result.unwrap();
         assert_eq!(parts.status, StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_read_response_body_bytes_match() {
+        let response = Response::builder().body(Body::from(TEST_TEXT)).unwrap();
+
+        let (_parts, bytes) = read_response_body(response).await.unwrap();
+
         assert_eq!(bytes, TEST_TEXT.as_bytes());
     }
 
     #[tokio::test]
     async fn test_read_response_body_with_headers() {
         let response = Response::builder()
-            .status(StatusCode::OK)
             .header("content-type", "application/json")
-            .header("content-encoding", "gzip")
             .body(Body::from(TEST_TEXT))
             .unwrap();
 
-        let result = read_response_body(response).await;
-        assert!(result.is_ok());
+        let (parts, _bytes) = read_response_body(response).await.unwrap();
 
-        let (parts, bytes) = result.unwrap();
-        assert_eq!(parts.status, StatusCode::OK);
         assert_eq!(
             parts.headers.get("content-type").unwrap(),
             "application/json"
         );
-        assert_eq!(parts.headers.get("content-encoding").unwrap(), "gzip");
-        assert_eq!(bytes, TEST_TEXT.as_bytes());
     }
 
     #[test]
     fn test_is_gzip_encoded_true() {
-        let mut headers = HeaderMap::new();
-        headers.insert("content-encoding", "gzip".parse().unwrap());
+        let headers = HeaderMap::from_iter([(
+            HeaderName::from_static("content-encoding"),
+            HeaderValue::from_static("gzip"),
+        )]);
 
-        assert!(is_gzip_encoded(&headers));
+        let result = is_gzip_encoded(&headers);
+
+        assert!(result);
     }
 
     #[test]
     fn test_is_gzip_encoded_false_no_header() {
         let headers = HeaderMap::new();
-        assert!(!is_gzip_encoded(&headers));
+
+        let result = is_gzip_encoded(&headers);
+
+        assert!(!result);
     }
 
     #[test]
     fn test_is_gzip_encoded_false_different_encoding() {
-        let mut headers = HeaderMap::new();
-        headers.insert("content-encoding", "deflate".parse().unwrap());
+        let headers = HeaderMap::from_iter([(
+            HeaderName::from_static("content-encoding"),
+            HeaderValue::from_static("deflate"),
+        )]);
 
-        assert!(!is_gzip_encoded(&headers));
+        let result = is_gzip_encoded(&headers);
+
+        assert!(!result);
     }
 
     #[test]
@@ -309,8 +289,9 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert("content-encoding", "br, gzip".parse().unwrap());
 
-        // Our function only checks for exact "gzip" match
-        assert!(!is_gzip_encoded(&headers));
+        let result = is_gzip_encoded(&headers);
+
+        assert!(!result);
     }
 
     #[test]
@@ -318,9 +299,16 @@ mod tests {
         let bytes = Bytes::from(TEST_TEXT);
 
         let result = decode_response_body(&bytes, false);
-        assert!(result.is_ok());
 
-        let decoded = result.unwrap();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_decode_response_body_plain_text_content() {
+        let bytes = Bytes::from(TEST_TEXT);
+
+        let decoded = decode_response_body(&bytes, false).unwrap();
+
         assert_eq!(decoded, TEST_TEXT);
     }
 
@@ -330,9 +318,17 @@ mod tests {
         let bytes = Bytes::from(compressed);
 
         let result = decode_response_body(&bytes, true);
-        assert!(result.is_ok());
 
-        let decoded = result.unwrap();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_decode_response_body_gzipped_content() {
+        let compressed = create_gzipped_bytes(TEST_TEXT);
+        let bytes = Bytes::from(compressed);
+
+        let decoded = decode_response_body(&bytes, true).unwrap();
+
         assert_eq!(decoded, TEST_TEXT);
     }
 
@@ -342,10 +338,17 @@ mod tests {
         let bytes = Bytes::from(invalid_utf8);
 
         let result = decode_response_body(&bytes, false);
-        assert!(result.is_ok());
 
-        // Should use lossy conversion
-        let decoded = result.unwrap();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_decode_response_body_invalid_utf8_uses_replacement_chars() {
+        let invalid_utf8 = vec![0xFF, 0xFE, 0xFD];
+        let bytes = Bytes::from(invalid_utf8);
+
+        let decoded = decode_response_body(&bytes, false).unwrap();
+
         assert!(decoded.contains('�')); // Replacement character
     }
 
@@ -354,55 +357,103 @@ mod tests {
         let invalid_gzip = Bytes::from("not gzipped");
 
         let result = decode_response_body(&invalid_gzip, true);
+
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn test_decode_response_body_gzip_error_status() {
+        let invalid_gzip = Bytes::from("not gzipped");
+
+        let error = decode_response_body(&invalid_gzip, true).unwrap_err();
+
+        assert_eq!(error, StatusCode::INTERNAL_SERVER_ERROR);
     }
 
     #[tokio::test]
     async fn test_encode_response_body_plain() {
         let result = encode_response_body(TEST_TEXT, false);
-        assert!(result.is_ok());
 
-        let body = result.unwrap();
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_encode_response_body_plain_content() {
+        let body = encode_response_body(TEST_TEXT, false).unwrap();
         let bytes = buffer_body(body).await.unwrap();
+
         assert_eq!(bytes, TEST_TEXT.as_bytes());
     }
 
     #[tokio::test]
     async fn test_encode_response_body_compressed() {
         let result = encode_response_body(TEST_TEXT, true);
+
         assert!(result.is_ok());
+    }
 
-        let body = result.unwrap();
+    #[tokio::test]
+    async fn test_encode_response_body_compressed_content() {
+        let body = encode_response_body(TEST_TEXT, true).unwrap();
         let bytes = buffer_body(body).await.unwrap();
-
-        // Verify it's actually compressed by decompressing
         let decompressed = decompress_gzip(&bytes).unwrap();
+
         assert_eq!(decompressed, TEST_TEXT);
     }
 
     #[tokio::test]
     async fn test_encode_response_body_empty_compressed() {
         let result = encode_response_body(EMPTY_TEXT, true);
+
         assert!(result.is_ok());
+    }
 
-        let body = result.unwrap();
+    #[tokio::test]
+    async fn test_encode_response_body_empty_compressed_content() {
+        let body = encode_response_body(EMPTY_TEXT, true).unwrap();
         let bytes = buffer_body(body).await.unwrap();
-
         let decompressed = decompress_gzip(&bytes).unwrap();
+
         assert_eq!(decompressed, EMPTY_TEXT);
     }
 
     #[test]
-    fn test_round_trip_compression() {
-        // Test that compress -> decompress gives us back the original
-        let original_texts = [TEST_TEXT, UNICODE_TEXT, EMPTY_TEXT, "a", "🚀"];
+    fn test_round_trip_compression_test_text() {
+        let compressed = compress_gzip(TEST_TEXT).unwrap();
+        let bytes = Bytes::from(compressed);
+        let decompressed = decompress_gzip(&bytes).unwrap();
 
-        for text in original_texts {
-            let compressed = compress_gzip(text).unwrap();
-            let bytes = Bytes::from(compressed);
-            let decompressed = decompress_gzip(&bytes).unwrap();
-            assert_eq!(decompressed, text, "Round trip failed for: {text}");
-        }
+        assert_eq!(decompressed, TEST_TEXT);
+    }
+
+    #[test]
+    fn test_round_trip_compression_empty_text() {
+        let compressed = compress_gzip(EMPTY_TEXT).unwrap();
+        let bytes = Bytes::from(compressed);
+        let decompressed = decompress_gzip(&bytes).unwrap();
+
+        assert_eq!(decompressed, EMPTY_TEXT);
+    }
+
+    #[test]
+    fn test_round_trip_compression_single_char() {
+        let original_text = "a";
+
+        let compressed = compress_gzip(original_text).unwrap();
+        let bytes = Bytes::from(compressed);
+        let decompressed = decompress_gzip(&bytes).unwrap();
+
+        assert_eq!(decompressed, original_text);
+    }
+
+    #[test]
+    fn test_round_trip_compression_unicode() {
+        let original_text = "🚀";
+
+        let compressed = compress_gzip(original_text).unwrap();
+        let bytes = Bytes::from(compressed);
+        let decompressed = decompress_gzip(&bytes).unwrap();
+
+        assert_eq!(decompressed, original_text);
     }
 }
