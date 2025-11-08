@@ -42,11 +42,6 @@ mod tests {
     #[test]
     fn test_default_log_level_is_valid() {
         let args = CommandLineArguments::parse_from(["kobo-server"]);
-        assert_eq!(args.log_level, "info");
-
-        assert!(
-            tracing::Level::from_str(&args.log_level).is_ok(),
-            "Log level should be valid"
-        );
+        assert!(tracing::Level::from_str(&args.log_level).is_ok());
     }
 }

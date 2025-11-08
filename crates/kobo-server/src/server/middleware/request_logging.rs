@@ -26,13 +26,10 @@ pub async fn log_requests(
     let bytes = buffer_body(body).await?;
 
     let is_gzipped = is_gzip_encoded(&parts.headers);
-    let body_repr = match decode_response_body(&bytes, is_gzipped) {
-        Ok(body) => body,
-        Err(e) => {
-            tracing::warn!("Failed to decode request body: {e}");
-            Cow::Owned("<unprintable body>".into())
-        }
-    };
+    let body_repr = decode_response_body(&bytes, is_gzipped).unwrap_or_else(|e| {
+        tracing::warn!("Failed to decode request body: {e}");
+        Cow::Owned("<unprintable body>".into())
+    });
 
     tracing::info!(
         method = %parts.method,
@@ -57,13 +54,10 @@ pub async fn log_responses(
     let bytes = buffer_body(body).await?;
     let is_gzipped = is_gzip_encoded(&parts.headers);
 
-    let body_repr = match decode_response_body(&bytes, is_gzipped) {
-        Ok(body) => body,
-        Err(e) => {
-            tracing::warn!("Failed to decode response body: {e}");
-            Cow::Owned("<unprintable body>".into())
-        }
-    };
+    let body_repr = decode_response_body(&bytes, is_gzipped).unwrap_or_else(|e| {
+        tracing::warn!("Failed to decode response body: {e}");
+        Cow::Owned("<unprintable body>".into())
+    });
 
     tracing::info!(
         status = %parts.status,
