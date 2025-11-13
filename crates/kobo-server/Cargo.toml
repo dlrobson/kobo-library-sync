@@ -24,7 +24,7 @@ http-body-util = "0.1.3"
 hyper = "1.7.0"
 hyper-tls = "0.6.0"
 hyper-util = { version = "0.1.17", features = ["client-legacy"] }
-tokio = { version = "1.47.1", features = ["rt-multi-thread", "signal"] }
+tokio = { version = "1.48.0", features = ["rt-multi-thread", "signal"] }
 tokio-util = "0.7.16"
 tower = "0.5"
 tower-http = { version = "0.6.6", features = ["normalize-path"] }
