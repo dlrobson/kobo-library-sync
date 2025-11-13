@@ -20,6 +20,12 @@ pub struct App {
     server_started: CancellationToken,
 }
 
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl App {
     /// Creates a new instance of the application.
     #[must_use]

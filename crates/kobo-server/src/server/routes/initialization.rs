@@ -1,30 +1,34 @@
 //! Handler for the initialization route.
 
-use axum::response::Response;
+pub use implementation::initialization_handler;
 
-use crate::server::{
-    routes::{constants::KOBO_API_URL, kobo_store_request::kobo_store_request},
-    state::server_state::ServerState,
-    utils::http_body::{
-        decode_response_body, encode_response_body, is_gzip_encoded, read_response_body,
-    },
-};
+mod implementation {
+    use axum::response::Response;
 
-/// Handler for the `/v1/initialization` endpoint. Forwards to Kobo API and rewrites
-/// Kobo API base URLs in the JSON body to the configured frontend URL, preserving
-/// gzip encoding if present.
-pub async fn initialization_handler(
-    state: axum::extract::State<ServerState>,
-    request: axum::extract::Request,
-) -> Result<Response, hyper::StatusCode> {
-    let frontend_url = state.frontend_url.clone();
-    let response = kobo_store_request(state, request).await?;
-    let (parts, bytes) = read_response_body(response).await?;
-    let gz = is_gzip_encoded(&parts.headers);
-    let body_text = decode_response_body(&bytes, gz)?;
-    let modified = body_text.replace(KOBO_API_URL, frontend_url.as_str());
-    let body = encode_response_body(&modified, gz)?;
-    Ok(Response::from_parts(parts, body))
+    use crate::server::{
+        routes::{constants::KOBO_API_URL, kobo_store_request::kobo_store_request},
+        state::server_state::ServerState,
+        utils::http_body::{
+            decode_response_body, encode_response_body, is_gzip_encoded, read_response_body,
+        },
+    };
+
+    /// Handler for the `/v1/initialization` endpoint. Forwards to Kobo API and rewrites
+    /// Kobo API base URLs in the JSON body to the configured frontend URL, preserving
+    /// gzip encoding if present.
+    pub async fn initialization_handler(
+        state: axum::extract::State<ServerState>,
+        request: axum::extract::Request,
+    ) -> Result<Response, hyper::StatusCode> {
+        let frontend_url = state.frontend_url.clone();
+        let response = kobo_store_request(state, request).await?;
+        let (parts, bytes) = read_response_body(response).await?;
+        let gz = is_gzip_encoded(&parts.headers);
+        let body_text = decode_response_body(&bytes, gz)?;
+        let modified = body_text.replace(KOBO_API_URL, frontend_url.as_str());
+        let body = encode_response_body(&modified, gz)?;
+        Ok(Response::from_parts(parts, body))
+    }
 }
 
 #[cfg(test)]
@@ -41,7 +45,7 @@ mod tests {
 
     use crate::server::{
         router::create_router,
-        state::{client::stub_kobo_client::StubKoboClient, server_state::ServerState},
+        state::{fake_kobo_client::FakeKoboClient, server_state::ServerState},
         utils::http_body::{compress_gzip, decompress_gzip},
     };
 
@@ -50,7 +54,7 @@ mod tests {
         let original_json = r#"{"Resources":{"library_sync":"https://storeapi.kobo.com/v1/library/sync","user_profile":"https://storeapi.kobo.com/v1/user/profile"}}"#;
         let compressed_json = compress_gzip(original_json).expect("Failed to compress JSON");
         let configured_frontend = "http://placeholder.local";
-        let stub = Arc::new(StubKoboClient::new());
+        let stub = Arc::new(FakeKoboClient::new());
         let state = ServerState::builder(configured_frontend)
             .client(stub.clone())
             .build();
@@ -91,7 +95,7 @@ mod tests {
     async fn test_initialization_handler_replaces_urls_in_plain_response() {
         let original_json = r#"{"Resources":{"library_sync":"https://storeapi.kobo.com/v1/library/sync","user_profile":"https://storeapi.kobo.com/v1/user/profile"}}"#;
         let configured_frontend = "https://frontend.example";
-        let stub = Arc::new(StubKoboClient::new());
+        let stub = Arc::new(FakeKoboClient::new());
         let state = ServerState::builder(configured_frontend)
             .client(stub.clone())
             .build();

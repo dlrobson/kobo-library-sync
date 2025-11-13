@@ -32,6 +32,7 @@ error_impl_error = "warn"
 exit = "warn"
 expect_used = "warn"
 if_then_some_else_none = "warn"
+impl_trait_in_params = "warn"
 # Renovate is active in this repo, so all dependencies are up to date. There
 # may be multiple versions of the same crate in the dependency tree, and does
 # not seem to be a simple way to avoid that.
@@ -43,6 +44,7 @@ redundant_type_annotations = "warn"
 return_and_then = "warn"
 same_name_method = "warn"
 self_named_module_files = "warn"
+str_to_string = "warn"
 tests_outside_test_module = "warn"
 todo = "warn"
 try_err = "warn"
