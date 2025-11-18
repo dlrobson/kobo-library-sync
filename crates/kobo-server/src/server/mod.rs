@@ -4,9 +4,8 @@ mod listener;
 mod middleware;
 mod router;
 mod routes;
-mod server;
+mod server_implementation;
 mod state;
 mod utils;
 
-pub use server::Server;
-pub use server::ServerBuilder;
+pub use server_implementation::{Server, ServerBuilder};

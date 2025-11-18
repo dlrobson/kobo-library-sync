@@ -1,3 +1,11 @@
+//! A fake listener for testing purposes.
+
+#![expect(
+    clippy::unimplemented,
+    clippy::unreachable,
+    reason = "This is a fake listener for testing purposes only."
+)]
+
 use std::net::{Ipv4Addr, SocketAddr};
 
 use axum::serve::Listener;
@@ -55,23 +63,21 @@ impl Listener for FakeListener {
     ///
     /// If the underlying accept call can return an error, this function must
     /// take care of logging and retrying.
-    fn accept(&mut self) -> impl Future<Output = (Self::Io, Self::Addr)> + Send {
-        async move {
-            // Implementation of accepting a connection goes here
-            std::future::pending::<()>().await;
-            unreachable!()
-        }
+    async fn accept(&mut self) -> (Self::Io, Self::Addr) {
+        // Implementation of accepting a connection goes here
+        std::future::pending::<()>().await;
+        unreachable!()
     }
 
     /// Returns the local address that this listener is bound to.
     fn local_addr(&self) -> std::io::Result<Self::Addr> {
-        let ipv4_addr = Ipv4Addr::new(0, 0, 0, 0);
+        let ipv4_addr = Ipv4Addr::UNSPECIFIED;
         Ok(SocketAddr::new(std::net::IpAddr::V4(ipv4_addr), self.port))
     }
 }
 
 impl FakeListener {
-    /// Creates a new FakeListener instance.
+    /// Creates a new `FakeListener` instance.
     pub fn new(port: u16) -> Self {
         Self { port }
     }

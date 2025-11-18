@@ -52,7 +52,7 @@ mod implementation {
     }
 
     impl ServerBuilder<TokioTcpListener> {
-        /// Creates a new ServerBuilder with default configuration.
+        /// Creates a new `ServerBuilder` with default configuration.
         ///
         /// # Arguments
         /// * `frontend_url` - The frontend URL to use for URL rewriting
@@ -61,7 +61,7 @@ mod implementation {
                 listener_builder: TokioTcpListener,
                 cancellation_token,
                 port: 8080,
-                frontend_url: "http://localhost:8080".to_string(),
+                frontend_url: "http://localhost:8080".to_owned(),
                 enable_request_logging: false,
                 enable_response_logging: false,
             }
@@ -85,7 +85,7 @@ mod implementation {
         ///
         /// # Arguments
         /// * `frontend_url` - The frontend URL to use
-        pub fn frontend_url(mut self, frontend_url: impl Into<String>) -> Self {
+        pub fn frontend_url<T: Into<String>>(mut self, frontend_url: T) -> Self {
             self.frontend_url = frontend_url.into();
             self
         }

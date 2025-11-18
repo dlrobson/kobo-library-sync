@@ -27,7 +27,7 @@ impl IntoListener for TokioTcpListener {
     type Listener = tokio::net::TcpListener;
 
     async fn into_listener(self, port: u16) -> anyhow::Result<Self::Listener> {
-        let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
+        let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
         Ok(listener)
     }
 }
