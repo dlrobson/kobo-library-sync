@@ -51,7 +51,7 @@ pub struct FakeListener {
     port: u16,
 }
 
-/// Types that can listen for connections.
+/// A fake listener implementation for testing that never accepts real connections.
 impl Listener for FakeListener {
     /// The listener's IO type.
     type Io = FakeIo;
