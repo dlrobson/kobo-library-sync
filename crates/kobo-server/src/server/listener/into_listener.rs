@@ -21,7 +21,7 @@ pub trait IntoListener {
 
 pub struct TokioTcpListener;
 
-/// Implementation for u16 port numbers - creates a TCP listener bound to the port.
+/// Implementation for `TokioTcpListener` - creates a TCP listener bound to the specified port.
 #[async_trait::async_trait]
 impl IntoListener for TokioTcpListener {
     type Listener = tokio::net::TcpListener;
