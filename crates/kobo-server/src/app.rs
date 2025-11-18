@@ -8,7 +8,10 @@ use std::{
 use anyhow::Result;
 use tokio_util::sync::CancellationToken;
 
-use crate::{command_line_arguments::CommandLineArguments, server::Server};
+use crate::{
+    command_line_arguments::CommandLineArguments,
+    server::{Server, ServerBuilder},
+};
 
 /// The main application struct that orchestrates the entire application lifecycle.
 pub struct App {
@@ -56,20 +59,21 @@ impl App {
     ///
     /// If the server fails to start.
     async fn start_server(&self, command_line_arguments: CommandLineArguments) -> Result<()> {
-        let frontend_url = command_line_arguments
-            .frontend_url
-            .unwrap_or_else(|| format!("http://localhost:{}", command_line_arguments.port));
-        let server = Server::start(
-            command_line_arguments.port,
-            frontend_url,
-            self.cancellation_token.clone(),
-            command_line_arguments.enable_request_logging,
-            command_line_arguments.enable_response_logging,
-        )
-        .await?;
+        let server = ServerBuilder::new(self.cancellation_token.clone())
+            .port(command_line_arguments.port)
+            .frontend_url(
+                command_line_arguments
+                    .frontend_url
+                    .unwrap_or_else(|| format!("http://localhost:{}", command_line_arguments.port)),
+            )
+            .enable_request_logging(command_line_arguments.enable_request_logging)
+            .enable_response_logging(command_line_arguments.enable_response_logging)
+            .build()
+            .await?;
 
         tracing::info!("Server started on http://{}", server.address());
         *self.server.lock().unwrap_or_else(PoisonError::into_inner) = Some(server);
+
         self.server_started.cancel();
 
         Ok(())

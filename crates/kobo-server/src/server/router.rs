@@ -75,7 +75,7 @@ mod tests {
         let response = router
             .oneshot(request)
             .await
-            .expect("router should respond");
+            .unwrap();
         assert_eq!(response.status(), 200);
         // We can't directly read normalized path from response, but normalization allowed fallback
         // to match and stub to be consumed. Indirect evidence: stub saw request with normalized
