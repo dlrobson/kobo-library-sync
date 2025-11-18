@@ -1,4 +1,4 @@
-//! Server builder module for configurable server construction.
+//! Listener abstraction for configurable server listeners.
 
 use std::net::SocketAddr;
 
