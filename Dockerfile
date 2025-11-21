@@ -15,7 +15,8 @@ RUN rustup toolchain install nightly && \
     rustup component add rustfmt --toolchain nightly
 
 # Install cargo-binstall for faster tool installation
-RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+# Using v1.10.20 for reproducibility (will be updated via renovate)
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/v1.10.20/install-from-binstall-release.sh | bash
 
 # Install cargo tools for CI
 RUN cargo binstall --no-confirm cargo-llvm-cov@0.6.15
