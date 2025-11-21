@@ -21,7 +21,7 @@
             "datasourceTemplate": "github-tags",
             "depNameTemplate": "rust-dtolnay",
             "managerFilePatterns": [
-                ".github/workflows/.+\\.ya?ml$"
+                "/(^|/)\\.github/workflows/.+\\.ya?ml$/"
             ],
             "matchStrings": [
                 "dtolnay/rust-toolchain@(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)"
