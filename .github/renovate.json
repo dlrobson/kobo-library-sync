@@ -15,6 +15,18 @@
                 "channel\\s*=\\s*\"(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\""
             ],
             "packageNameTemplate": "rust-lang/rust"
+        },
+        {
+            "customType": "regex",
+            "datasourceTemplate": "github-tags",
+            "depNameTemplate": "rust-dtolnay",
+            "managerFilePatterns": [
+                ".github/workflows/.+\\.ya?ml$"
+            ],
+            "matchStrings": [
+                "dtolnay/rust-toolchain@(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)"
+            ],
+            "packageNameTemplate": "rust-lang/rust"
         }
     ],
     "extends": [
@@ -24,7 +36,8 @@
         {
             "commitMessageTopic": "Rust",
             "matchDepNames": [
-                "rust"
+                "rust",
+                "rust-dtolnay"
             ],
             "matchManagers": [
                 "custom.regex"
