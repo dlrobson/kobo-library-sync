@@ -2,11 +2,8 @@ name: kobo-library-sync-${PWD:?}
 
 services:
   devcontainer:
-    build:
-      pull: true
-      dockerfile: devcontainer.Dockerfile
-      args:
-        USER: ${USER:?}
+    image: ghcr.io/dlrobson/kobo-library-sync-ci:latest
+    pull_policy: always
     volumes:
       - ..:/workspaces/kobo-library-sync:cached
     command: "bash -c 'trap exit TERM; sleep infinity & wait;'"
