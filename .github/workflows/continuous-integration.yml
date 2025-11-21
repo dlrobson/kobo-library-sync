@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@1.91.1
 
       - uses: actions/cache@v4
         with:
@@ -59,7 +59,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: cargo +nightly-2025-09-01 fmt --check
 
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@1.91.1
       - name: Check for clippy warnings
         if: ${{ !cancelled() }}
         run: cargo clippy --locked --workspace --all-targets --no-deps --all-features -- -D warnings
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@1.91.1
 
       - uses: actions/cache@v4
         with:
