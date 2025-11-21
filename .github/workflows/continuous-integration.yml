@@ -50,9 +50,8 @@ jobs:
           restore-keys: |
             quality-
 
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/rust-toolchain@nightly-2025-09-01
         with:
-          toolchain: nightly-2025-09-01
           components: rustfmt
         
       - name: Check Rust formatting
@@ -75,9 +74,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@nightly
-        with:
-          toolchain: nightly-2025-09-01
+      - uses: dtolnay/rust-toolchain@nightly-2025-09-01
 
       - uses: actions/cache@v4
         with:
