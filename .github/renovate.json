@@ -1,10 +1,35 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "cargo": {
+        "rangeStrategy": "bump"
+    },
+    "customManagers": [
+        {
+            "customType": "regex",
+            "datasourceTemplate": "github-tags",
+            "depNameTemplate": "rust",
+            "managerFilePatterns": [
+                "/(^|/)rust-toolchain\\.toml?$/"
+            ],
+            "matchStrings": [
+                "channel\\s*=\\s*\"(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\""
+            ],
+            "packageNameTemplate": "rust-lang/rust"
+        }
+    ],
     "extends": [
         "config:recommended"
     ],
-    "prHourlyLimit": 10,
-    "cargo": {
-        "rangeStrategy": "bump"
-    }
+    "packageRules": [
+        {
+            "commitMessageTopic": "Rust",
+            "matchDepNames": [
+                "rust"
+            ],
+            "matchManagers": [
+                "custom.regex"
+            ]
+        }
+    ],
+    "prHourlyLimit": 10
 }
