@@ -6,16 +6,16 @@ use kobo_server::{App, CommandLineArguments};
 
 #[tokio::test]
 async fn test_hello_world_endpoint_integration() {
-    let app = Arc::new(App::new());
-
     let args = CommandLineArguments {
         port: 0,
         ..Default::default()
     };
 
+    let app = Arc::new(App::new(args));
+
     // Start the server
     let app_clone = app.clone();
-    let app_handle = tokio::spawn(async move { app_clone.run(args).await });
+    let app_handle = tokio::spawn(async move { app_clone.run().await });
     app.wait_until_running().await;
     let app_port = app
         .server_address()

@@ -6,17 +6,16 @@ use kobo_server::{App, CommandLineArguments};
 
 #[tokio::test]
 async fn test_clean_shutdown() {
-    let app = Arc::new(App::new());
     // Create command line arguments with port 0 to get a random available port
     let args = CommandLineArguments {
         port: 0,
         ..Default::default()
     };
+    let app = Arc::new(App::new(args));
 
     // Start the app in a background task
     let app_clone = app.clone();
-    let app_handle = tokio::spawn(async move { app_clone.run(args).await });
-
+    let app_handle = tokio::spawn(async move { app_clone.run().await });
     // Cancel the task to simulate shutdown
     app.shutdown().await.expect("Should shutdown cleanly");
 

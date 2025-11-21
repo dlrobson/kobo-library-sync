@@ -1,5 +1,9 @@
 #[cfg(test)]
-pub mod fake_listener;
+mod fake_listener;
 #[cfg(test)]
-pub mod fake_listener_builder;
-pub mod into_listener;
+mod fake_listener_builder;
+mod into_listener;
+
+#[cfg(test)]
+pub use fake_listener_builder::FakeListenerBuilder;
+pub use into_listener::{IntoListener, TokioTcpListener};
