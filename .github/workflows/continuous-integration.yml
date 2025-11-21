@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: prepare-image
     container:
-      image: ${{ format('{0}/{1}:{2}', 'ghcr.io', github.repository, needs.prepare-image.outputs.image-tag) }}
+      image: ghcr.io/${{ github.repository }}-ci:${{ needs.prepare-image.outputs.image-tag }}
     steps:
       - uses: actions/checkout@v6
 
@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: prepare-image
     container:
-      image: ${{ format('{0}/{1}:{2}', 'ghcr.io', github.repository, needs.prepare-image.outputs.image-tag) }}
+      image: ghcr.io/${{ github.repository }}-ci:${{ needs.prepare-image.outputs.image-tag }}
 
     steps:
       - uses: actions/checkout@v6
@@ -158,7 +158,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: prepare-image
     container:
-      image: ${{ format('{0}/{1}:{2}', 'ghcr.io', github.repository, needs.prepare-image.outputs.image-tag) }}
+      image: ghcr.io/${{ github.repository }}-ci:${{ needs.prepare-image.outputs.image-tag }}
     env:
       COVERAGE_DIR: /tmp/coverage
     permissions:
@@ -195,7 +195,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: prepare-image
     container:
-      image: ${{ format('{0}/{1}:{2}', 'ghcr.io', github.repository, needs.prepare-image.outputs.image-tag) }}
+      image: ghcr.io/${{ github.repository }}-ci:${{ needs.prepare-image.outputs.image-tag }}
     steps:
       - uses: actions/checkout@v6
 
