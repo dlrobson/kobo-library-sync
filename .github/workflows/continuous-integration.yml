@@ -11,6 +11,8 @@ env:
   COVERAGE_THRESHOLD: 80
   RUST_LOG: debug
   RUST_BACKTRACE: full
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 # This stops any running jobs when a new commit is pushed
 # Reference: https://stackoverflow.com/a/72408109
@@ -19,11 +21,100 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  prepare-image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-tag: ${{ steps.determine-tag.outputs.tag }}
+      dockerfile-changed: ${{ steps.check-dockerfile.outputs.changed }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.91.1
+        with:
+          fetch-depth: 0
+
+      - name: Check if Dockerfile changed
+        id: check-dockerfile
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q '^Dockerfile$'; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            # On main branch, always consider as changed to rebuild
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine image tag
+        id: determine-tag
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if [ "${{ steps.check-dockerfile.outputs.changed }}" = "true" ]; then
+              echo "tag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            else
+              echo "tag=latest" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log in to the Container registry
+        if: steps.check-dockerfile.outputs.changed == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        if: steps.check-dockerfile.outputs.changed == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.determine-tag.outputs.tag }}
+
+      - name: Build and push Docker image
+        if: steps.check-dockerfile.outputs.changed == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  retag-latest:
+    runs-on: ubuntu-latest
+    needs: prepare-image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.prepare-image.outputs.dockerfile-changed == 'true'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull and retag as latest
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare-image.outputs.image-tag }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare-image.outputs.image-tag }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  build:
+    runs-on: ubuntu-latest
+    needs: prepare-image
+    container:
+      image: ${{ format('{0}/{1}:{2}', 'ghcr.io', github.repository, needs.prepare-image.outputs.image-tag) }}
+    steps:
+      - uses: actions/checkout@v6
 
       - uses: actions/cache@v4
         with:
@@ -39,6 +130,9 @@ jobs:
 
   quality-check:
     runs-on: ubuntu-latest
+    needs: prepare-image
+    container:
+      image: ${{ format('{0}/{1}:{2}', 'ghcr.io', github.repository, needs.prepare-image.outputs.image-tag) }}
 
     steps:
       - uses: actions/checkout@v6
@@ -49,23 +143,20 @@ jobs:
           key: quality-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             quality-
-
-      - uses: dtolnay/rust-toolchain@nightly
-        with:
-          toolchain: nightly-2025-09-01
-          components: rustfmt
         
       - name: Check Rust formatting
         if: ${{ !cancelled() }}
         run: cargo +nightly-2025-09-01 fmt --check
 
-      - uses: dtolnay/rust-toolchain@1.91.1
       - name: Check for clippy warnings
         if: ${{ !cancelled() }}
         run: cargo clippy --locked --workspace --all-targets --no-deps --all-features -- -D warnings
 
   code-coverage:
     runs-on: ubuntu-latest
+    needs: prepare-image
+    container:
+      image: ${{ format('{0}/{1}:{2}', 'ghcr.io', github.repository, needs.prepare-image.outputs.image-tag) }}
     env:
       COVERAGE_DIR: /tmp/coverage
     permissions:
@@ -75,9 +166,6 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@nightly
-        with:
-          toolchain: nightly-2025-09-01
 
       - uses: actions/cache@v4
         with:
@@ -86,10 +174,6 @@ jobs:
           key: coverage-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             coverage-
-
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-llvm-cov
 
       - name: Generate code coverage
         run: |
@@ -107,9 +191,11 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
+    needs: prepare-image
+    container:
+      image: ${{ format('{0}/{1}:{2}', 'ghcr.io', github.repository, needs.prepare-image.outputs.image-tag) }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.91.1
 
       - uses: actions/cache@v4
         with:
