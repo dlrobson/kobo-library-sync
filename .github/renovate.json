@@ -19,7 +19,7 @@
         {
             "customType": "regex",
             "datasourceTemplate": "github-tags",
-            "depNameTemplate": "rust-dtolnay",
+            "depNameTemplate": "rust",
             "managerFilePatterns": [
                 "/(^|/)\\.github/workflows/.+\\.ya?ml$/"
             ],
@@ -36,8 +36,7 @@
         {
             "commitMessageTopic": "Rust",
             "matchDepNames": [
-                "rust",
-                "rust-dtolnay"
+                "rust"
             ],
             "matchManagers": [
                 "custom.regex"
