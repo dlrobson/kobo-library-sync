@@ -1,6 +1,6 @@
 //! Server components for the Kobo proxy application.
 
-mod listener;
+pub mod listener;
 mod middleware;
 mod router;
 mod routes;

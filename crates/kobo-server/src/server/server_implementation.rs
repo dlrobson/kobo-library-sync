@@ -9,7 +9,7 @@ mod implementation {
     use tokio_util::sync::CancellationToken;
 
     use crate::server::{
-        listener::into_listener::{IntoListener, TokioTcpListener},
+        listener::{IntoListener, TokioTcpListener},
         router::create_router,
         state::server_state::ServerState,
     };
@@ -163,7 +163,7 @@ mod tests {
     use tokio_util::sync::CancellationToken;
 
     use super::*;
-    use crate::server::listener::fake_listener_builder::FakeListenerBuilder;
+    use crate::server::listener::FakeListenerBuilder;
 
     // Helper function to create a basic server builder for testing
     fn create_test_server_builder() -> ServerBuilder<FakeListenerBuilder> {

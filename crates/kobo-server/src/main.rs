@@ -7,8 +7,8 @@ use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _
 async fn main() -> anyhow::Result<()> {
     let command_line_arguments = CommandLineArguments::parse_arguments();
     initialize_logging(&command_line_arguments.log_level);
-    let app = App::new();
-    app.run(command_line_arguments).await
+    let app = App::new(command_line_arguments);
+    app.run().await
 }
 
 /// Initialize the logging subsystem with the specified log level.
