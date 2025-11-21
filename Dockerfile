@@ -11,10 +11,13 @@ RUN apt-get update && \
     echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd;
 
 # Install nightly toolchain for formatting and coverage
-RUN rustup toolchain install nightly-2025-09-01 && \
-    rustup component add rustfmt --toolchain nightly-2025-09-01
+RUN rustup toolchain install nightly && \
+    rustup component add rustfmt --toolchain nightly
+
+# Install cargo-binstall for faster tool installation
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 
 # Install cargo tools for CI
-RUN cargo install cargo-llvm-cov
+RUN cargo binstall --no-confirm cargo-llvm-cov@0.6.15
 
 USER ${USER}
