@@ -42,6 +42,7 @@ jobs:
 
   setup:
     runs-on: ubuntu-latest
+    if: always()
     needs: [retag-image, prepare-image]
     outputs:
       image-tag: ${{ needs.prepare-image.outputs.image-tag }}
