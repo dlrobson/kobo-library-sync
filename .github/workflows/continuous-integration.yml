@@ -20,13 +20,13 @@ concurrency:
 
 jobs:
   retag-image:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/retag-ci-image.yml
     permissions:
       packages: write
     with:
       image-name: ${{ github.repository }}-ci
       source-tag: pr-${{ github.event.pull_request.number }}
+      should-retag: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -42,7 +42,6 @@ jobs:
 
   setup:
     runs-on: ubuntu-latest
-    if: always()
     needs: [retag-image, prepare-image]
     outputs:
       image-tag: ${{ needs.prepare-image.outputs.image-tag }}

@@ -16,6 +16,11 @@ on:
         required: false
         type: string
         default: "latest"
+      should-retag:
+        description: "Whether to actually perform the retag (defaults to true)"
+        required: false
+        type: boolean
+        default: true
     secrets:
       token:
         description: "GitHub token for authentication"
@@ -40,6 +45,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Retag image
+        if: ${{ inputs.should-retag }}
         run: |
           docker buildx imagetools create \
             --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.target-tag }} \
