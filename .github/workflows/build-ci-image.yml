@@ -11,10 +11,6 @@ on:
         description: "The tag for the Docker image"
         required: true
         type: string
-      dockerfile:
-        description: "The path to the Dockerfile (defaults to ci.Dockerfile)"
-        required: false
-        type: string
     outputs:
       image-tag:
         description: "The tag to use for the Docker image"
@@ -29,12 +25,6 @@ env:
   IMAGE_NAME: ${{ inputs.image-name }}
   IMAGE_TAG: ${{ inputs.image-tag }}
   DOCKERFILE: 'ci.Dockerfile'
-
-# This stops any running jobs when a new commit is pushed
-# Reference: https://stackoverflow.com/a/72408109
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   prepare-image:
@@ -85,6 +75,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ${{ env.DOCKERFILE }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
