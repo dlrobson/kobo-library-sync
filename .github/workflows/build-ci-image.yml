@@ -19,6 +19,10 @@ on:
       image-tag:
         description: "The tag to use for the Docker image"
         value: ${{ jobs.prepare-image.outputs.image-tag }}
+    secrets:
+      token:
+        description: "GitHub token for authentication"
+        required: true
 
 env:
   REGISTRY: ghcr.io
@@ -35,8 +39,6 @@ concurrency:
 jobs:
   prepare-image:
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
     outputs:
       image-tag: ${{ steps.determine-tag.outputs.tag }}
       dockerfile-changed: ${{ steps.check-dockerfile.outputs.changed }}
@@ -67,7 +69,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.token }}
 
       - name: Extract metadata for Docker
         if: steps.check-dockerfile.outputs.changed == 'true'
