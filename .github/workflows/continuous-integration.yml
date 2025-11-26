@@ -25,7 +25,7 @@ jobs:
       packages: write
     with:
       image-name: ${{ github.repository }}-ci
-      image-tag: pr-${{ github.event.pull_request.number }}
+      image-tag: ${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || 'latest' }}
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
 
