@@ -9,7 +9,6 @@ RUN apt-get update && \
     useradd -m ${USER} && \
     echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd;
 
-# TODO
 RUN rustup toolchain install nightly && \
     rustup component add rustfmt --toolchain nightly
 
