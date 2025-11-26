@@ -11,6 +11,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}-ci
 
+permissions:
+  packages: write
+
 jobs:
   retag:
     if: github.event.pull_request.merged == true
