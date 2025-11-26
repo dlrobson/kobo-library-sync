@@ -54,6 +54,7 @@ jobs:
     needs: setup
     container:
       image: ghcr.io/${{ github.repository }}-ci:${{ needs.setup.outputs.image-tag }}
+      options: --user 0
     steps:
       - uses: actions/checkout@v6
 
@@ -74,6 +75,7 @@ jobs:
     needs: setup
     container:
       image: ghcr.io/${{ github.repository }}-ci:${{ needs.setup.outputs.image-tag }}
+      options: --user 0
 
     steps:
       - uses: actions/checkout@v6
@@ -98,6 +100,7 @@ jobs:
     needs: setup
     container:
       image: ghcr.io/${{ github.repository }}-ci:${{ needs.setup.outputs.image-tag }}
+      options: --user 0
     env:
       COVERAGE_DIR: /tmp/coverage
     permissions:
@@ -135,6 +138,7 @@ jobs:
     needs: setup
     container:
       image: ghcr.io/${{ github.repository }}-ci:${{ needs.setup.outputs.image-tag }}
+      options: --user 0
     steps:
       - uses: actions/checkout@v6
 
