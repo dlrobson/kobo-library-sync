@@ -51,7 +51,11 @@ jobs:
       - name: Determine image tag
         id: determine-tag
         run: |
-          echo "tag=${{ env.IMAGE_TAG }}" >> "$GITHUB_OUTPUT"
+          if [ "${{ steps.check-dockerfile.outputs.changed }}" == "true" ]; then
+            echo "tag=${{ env.IMAGE_TAG }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Log in to the Container registry
         if: steps.check-dockerfile.outputs.changed == 'true'

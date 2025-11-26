@@ -1,37 +1,19 @@
 name: Retag Docker Image
 
 on:
-  workflow_call:
-    inputs:
-      image-name:
-        description: "The name of the Docker image"
-        required: true
-        type: string
-      source-tag:
-        description: "The source image tag to retag"
-        required: true
-        type: string
-      target-tag:
-        description: "The target tag to apply (defaults to 'latest')"
-        required: false
-        type: string
-        default: "latest"
-      should-retag:
-        description: "Whether to actually perform the retag (defaults to true)"
-        required: false
-        type: boolean
-        default: true
-    secrets:
-      token:
-        description: "GitHub token for authentication"
-        required: true
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ inputs.image-name }}
+  IMAGE_NAME: ${{ github.repository }}-ci
 
 jobs:
   retag:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Log in to the Container registry
@@ -45,8 +27,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Retag image
-        if: ${{ inputs.should-retag }}
         run: |
           docker buildx imagetools create \
-            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.target-tag }} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.source-tag }}
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}

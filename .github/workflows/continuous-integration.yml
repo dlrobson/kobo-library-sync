@@ -19,17 +19,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  retag-image:
-    uses: ./.github/workflows/retag-ci-image.yml
-    permissions:
-      packages: write
-    with:
-      image-name: ${{ github.repository }}-ci
-      source-tag: pr-${{ github.event.pull_request.number }}
-      should-retag: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
-
   prepare-image:
     uses: ./.github/workflows/build-ci-image.yml
     permissions:
@@ -42,7 +31,7 @@ jobs:
 
   setup:
     runs-on: ubuntu-latest
-    needs: [retag-image, prepare-image]
+    needs: prepare-image
     outputs:
       image-tag: ${{ needs.prepare-image.outputs.image-tag }}
     steps:
