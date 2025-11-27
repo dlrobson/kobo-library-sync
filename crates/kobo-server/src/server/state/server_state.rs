@@ -54,7 +54,8 @@ mod implementation {
                 let connector = hyper_rustls::HttpsConnectorBuilder::new()
                     .with_native_roots()?
                     .https_only()
-                    .enable_all_versions()
+                    .enable_http1()
+                    .enable_http2()
                     .build();
                 let client: Client<HttpsConnector, Body> =
                     Client::builder(TokioExecutor::new()).build(connector);
