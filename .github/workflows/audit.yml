@@ -12,7 +12,6 @@ on:
         default: 'latest'
 
 jobs:
-
   security-audit:
     runs-on: ubuntu-latest
     container:
@@ -21,4 +20,4 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Run security audit
-        run: cargo deny check --locked
+        run: cargo deny check

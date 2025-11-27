@@ -130,7 +130,7 @@ jobs:
           name: docs
           path: target/doc
 
-  call-audit:
+  call-security-audit:
     needs: prepare-image
     uses: ./.github/workflows/audit.yml
     with:
