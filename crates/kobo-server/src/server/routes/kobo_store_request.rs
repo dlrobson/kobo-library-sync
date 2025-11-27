@@ -109,7 +109,8 @@ mod tests {
         let stub = Arc::new(FakeKoboClient::new());
         let state = ServerState::builder("http://frontend.test")
             .client(stub.clone())
-            .build();
+            .build()
+            .unwrap();
         (create_router(false, false, state), stub)
     }
 

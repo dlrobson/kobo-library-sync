@@ -1,0 +1,27 @@
+[advisories]
+unmaintained = "workspace"
+ignore = [
+]
+
+[bans]
+multiple-versions = "allow"
+wildcards = 'deny'
+deny = [
+    { crate = "openssl", use-instead = "rustls" },
+    { crate = "openssl-sys", use-instead = "rustls" },
+    "libssh2-sys",
+]
+
+[licenses]
+allow = [
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "CDLA-Permissive-2.0",
+    "ISC",
+    "MIT",
+    "Unicode-3.0"
+]
+
+[sources]
+unknown-git = "deny"
+unknown-registry = "deny"

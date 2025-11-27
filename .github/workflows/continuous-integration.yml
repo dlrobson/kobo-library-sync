@@ -43,8 +43,6 @@ jobs:
           path: |
             target/
           key: build-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            build-
 
       - name: Run tests
         run: cargo test --locked
@@ -64,8 +62,6 @@ jobs:
           path: |
             target/
           key: quality-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            quality-
         
       - name: Check Rust formatting
         if: ${{ !cancelled() }}
@@ -83,11 +79,6 @@ jobs:
       options: --user 0
     env:
       COVERAGE_DIR: /tmp/coverage
-    permissions:
-      # Needed to write a coverage report to the PR
-      pull-requests: write
-      # Needed to update the PR with a comment
-      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -96,8 +87,6 @@ jobs:
           path: |
             target/
           key: coverage-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            coverage-
 
       - name: Generate code coverage
         run: |
@@ -127,8 +116,6 @@ jobs:
           path: |
             target/
           key: docs-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            docs-
 
       - name: Generate docs
         if: ${{ !cancelled() }}
@@ -142,3 +129,9 @@ jobs:
         with:
           name: docs
           path: target/doc
+
+  call-security-audit:
+    needs: prepare-image
+    uses: ./.github/workflows/audit.yml
+    with:
+      image-tag: ${{ needs.prepare-image.outputs.image-tag }}
