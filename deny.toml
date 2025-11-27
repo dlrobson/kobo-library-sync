@@ -13,6 +13,7 @@ deny = [
 ]
 skip-tree = [
     { crate = "windows-sys", reason = "a foundational crate for many that bumps far too frequently to ever have a shared version" },
+    { crate = "wasi", reason = "multiple versions pulled in by different dependencies" },
 ]
 
 [licenses]
