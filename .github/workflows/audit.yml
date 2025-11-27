@@ -2,14 +2,21 @@ name: Security audit
 
 on:
   push:
-    paths: 
+    branches:
+      - main
+  pull_request:
+    paths:
       - '**/Cargo.lock'
+      - '.github/workflows/audit.yml'
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   security-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions-rs/audit-check@v1
+      - uses: EmbarkStudios/cargo-deny-action@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          log-level: info
+          arguments: --locked
