@@ -57,7 +57,8 @@ mod tests {
         let stub = Arc::new(FakeKoboClient::new());
         let state = ServerState::builder(configured_frontend)
             .client(stub.clone())
-            .build();
+            .build()
+            .unwrap();
         let router = create_router(false, false, state);
         stub.enqueue_response(
             Response::builder()
@@ -98,7 +99,8 @@ mod tests {
         let stub = Arc::new(FakeKoboClient::new());
         let state = ServerState::builder(configured_frontend)
             .client(stub.clone())
-            .build();
+            .build()
+            .unwrap();
         let router = create_router(false, false, state);
         stub.enqueue_response(
             Response::builder()

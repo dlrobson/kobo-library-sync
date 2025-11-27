@@ -5,14 +5,11 @@ pub use implementation::ServerState;
 mod implementation {
     use std::sync::Arc;
 
+    use anyhow::Result;
     use axum::body::Body;
-    use hyper_tls::HttpsConnector;
-    use hyper_util::{
-        client::legacy::{Client, connect::HttpConnector},
-        rt::TokioExecutor,
-    };
+    use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 
-    use crate::server::state::client::KoboClient;
+    use crate::server::state::client::{HttpsConnector, KoboClient};
 
     /// Shared application state
     #[derive(Clone)]
@@ -48,22 +45,27 @@ mod implementation {
         }
 
         /// Build the `ServerState`.
-        pub fn build(self) -> ServerState {
+        pub fn build(self) -> Result<ServerState> {
             let frontend_url = self.frontend_url;
 
             let client = if let Some(client) = self.client {
                 client
             } else {
-                let client: Client<HttpsConnector<HttpConnector>, Body> =
-                    Client::builder(TokioExecutor::new()).build(HttpsConnector::new());
+                let connector = hyper_rustls::HttpsConnectorBuilder::new()
+                    .with_native_roots()?
+                    .https_only()
+                    .enable_all_versions()
+                    .build();
+                let client: Client<HttpsConnector, Body> =
+                    Client::builder(TokioExecutor::new()).build(connector);
                 let client: Arc<dyn KoboClient> = Arc::new(client);
                 client
             };
 
-            ServerState {
+            Ok(ServerState {
                 client,
                 frontend_url,
-            }
+            })
         }
     }
 }
@@ -74,14 +76,18 @@ mod tests {
 
     #[test]
     fn builder_sets_frontend_url() {
-        let state = ServerState::builder("https://example.test").build();
+        let state = ServerState::builder("https://example.test")
+            .build()
+            .unwrap();
         assert_eq!(state.frontend_url, "https://example.test");
     }
 
     #[test]
     fn builder_defaults_frontend_url() {
         // No implicit default anymore; test explicit usage
-        let state = ServerState::builder("http://localhost:1234").build();
+        let state = ServerState::builder("http://localhost:1234")
+            .build()
+            .unwrap();
         assert_eq!(state.frontend_url, "http://localhost:1234");
     }
 }

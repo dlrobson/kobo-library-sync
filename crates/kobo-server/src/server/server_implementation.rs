@@ -128,7 +128,7 @@ mod implementation {
             <L::Listener as Listener>::Io: Send + Unpin + 'static,
         {
             let listener = self.listener_builder.into_listener(self.port).await?;
-            let app_state = ServerState::builder(self.frontend_url).build();
+            let app_state = ServerState::builder(self.frontend_url).build()?;
             let app = create_router(
                 self.enable_request_logging,
                 self.enable_response_logging,

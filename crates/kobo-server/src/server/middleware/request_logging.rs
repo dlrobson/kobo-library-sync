@@ -116,7 +116,8 @@ mod tests {
         let stub = Arc::new(FakeKoboClient::new());
         let state = ServerState::builder("http://frontend.test")
             .client(stub.clone())
-            .build();
+            .build()
+            .unwrap();
         let router = create_router(true, false, state);
 
         stub.enqueue_response(
@@ -139,7 +140,8 @@ mod tests {
         let stub = Arc::new(FakeKoboClient::new());
         let state = ServerState::builder("http://frontend.test")
             .client(stub.clone())
-            .build();
+            .build()
+            .unwrap();
         let router = create_router(false, true, state);
 
         stub.enqueue_response(
@@ -162,7 +164,8 @@ mod tests {
         let stub = Arc::new(FakeKoboClient::new());
         let state = ServerState::builder("http://frontend.test")
             .client(stub.clone())
-            .build();
+            .build()
+            .unwrap();
         let router = create_router(false, true, state);
 
         let gzip_body = gzip_bytes(TEST_RESPONSE);
