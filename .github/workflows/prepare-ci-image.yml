@@ -97,7 +97,7 @@ jobs:
 
   retag-to-latest:
     needs: get-tag
-    if: needs.get-tag.outputs.original-tag != needs.get-tag.outputs.final-tag
+    if: needs.get-tag.outputs.original-tag != needs.get-tag.outputs.final-tag && needs.get-tag.outputs.final-tag == 'latest'
     uses: ./.github/workflows/retag-image.yml
     with:
       registry: ${{ inputs.registry }}
