@@ -28,7 +28,8 @@ jobs:
   get-tag:
     runs-on: ubuntu-latest
     outputs:
-      tag: ${{ steps.determine-tag.outputs.tag }}
+      original-tag: ${{ steps.determine-tag.outputs.original-tag }}
+      final-tag: ${{ steps.determine-tag.outputs.final-tag }}
       changed: ${{ steps.check-dockerfile.outputs.changed }}
       image: ${{ steps.determine-tag.outputs.image }}
     steps:
@@ -43,14 +44,17 @@ jobs:
           if [ "${{ github.event_name }}" == "push" ]; then
             # On push to main, use the parent commit SHA
             BASE_SHA=$(git rev-parse HEAD^)
+            IS_MAIN_PUSH=true
             echo "Push to main - base commit: $BASE_SHA"
           else
             # On PR/feature branch, find the merge-base with main
             BASE_SHA=$(git merge-base origin/main HEAD)
+            IS_MAIN_PUSH=false
             echo "Feature branch - merge-base with main: $BASE_SHA"
           fi
           
           echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "is-main-push=$IS_MAIN_PUSH" >> "$GITHUB_OUTPUT"
 
       - name: Check if Dockerfile changed
         id: check-dockerfile
@@ -69,38 +73,48 @@ jobs:
         id: determine-tag
         run: |
           if [ "${{ steps.check-dockerfile.outputs.changed }}" == "true" ]; then
-            # Dockerfile changed - use current commit SHA for new image
-            TAG="${{ github.sha }}"
-            echo "Dockerfile changed - using current SHA: $TAG"
+            # If it's a push to main and Dockerfile changed, use 'latest'
+            if [ "${{ steps.base-commit.outputs.is-main-push }}" == "true" ]; then
+              ORIGINAL_TAG="${{ github.sha }}"
+              FINAL_TAG="latest"
+              echo "Push to main with Dockerfile change - using 'latest'"
+            else
+              # Pull request or feature branch with Dockerfile change - use current commit SHA
+              ORIGINAL_TAG="${{ github.sha }}"
+              FINAL_TAG="${{ github.sha }}"
+              echo "Feature branch with Dockerfile change - using commit SHA as tag"
+            fi
           else
             # Dockerfile unchanged - use 'latest'
-            TAG="latest"
+            ORIGINAL_TAG="latest"
+            FINAL_TAG="latest"
             echo "Dockerfile unchanged - using 'latest'"
           fi
           
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "image=${{ inputs.registry }}/${{ inputs.image-name }}:$TAG" >> "$GITHUB_OUTPUT"
+          echo "final-tag=$FINAL_TAG" >> "$GITHUB_OUTPUT"
+          echo "original-tag=$ORIGINAL_TAG" >> "$GITHUB_OUTPUT"
+          echo "image=${{ inputs.registry }}/${{ inputs.image-name }}:$FINAL_TAG" >> "$GITHUB_OUTPUT"
 
   retag-to-latest:
     needs: get-tag
-    if: needs.get-tag.outputs.tag = 'latest' && needs.get-tag.outputs.changed == 'true'
+    if: needs.get-tag.outputs.original-tag != needs.get-tag.outputs.final-tag
     uses: ./.github/workflows/retag-image.yml
     with:
       registry: ${{ inputs.registry }}
       image-name: ${{ inputs.image-name }}
-      source-tag: ${{ needs.get-tag.outputs.tag }}
+      source-tag: ${{ needs.get-tag.outputs.original-tag }}
       target-tag: latest
     secrets:
       token: ${{ secrets.token }}
 
   build-image:
     needs: get-tag
-    if: needs.get-tag.outputs.tag != 'latest'
+    if: needs.get-tag.outputs.final-tag != 'latest'
     uses: ./.github/workflows/build-image.yml
     with:
       registry: ${{ inputs.registry }}
       image-name: ${{ inputs.image-name }}
-      image-tag: ${{ needs.get-tag.outputs.tag }}
+      image-tag: ${{ needs.get-tag.outputs.final-tag }}
       dockerfile: ${{ inputs.dockerfile }}
     secrets:
       token: ${{ secrets.token }}
