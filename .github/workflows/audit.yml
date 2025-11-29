@@ -5,17 +5,16 @@ on:
     - cron: '0 0 * * *'
   workflow_call:
     inputs:
-      image-tag:
-        description: 'The tag of the CI image to use'
+      image:
+        description: 'The full CI image reference to use'
         required: false
         type: string
-        default: 'latest'
 
 jobs:
   security-audit:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository }}-ci:${{ inputs.image-tag || 'latest' }}
+      image: ${{ inputs.image || format('ghcr.io/{0}-ci:latest', github.repository) }}
       options: --user 0
     steps:
       - uses: actions/checkout@v6

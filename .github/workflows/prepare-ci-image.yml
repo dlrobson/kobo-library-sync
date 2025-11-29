@@ -1,0 +1,120 @@
+name: Prepare CI Image
+
+on:
+  workflow_call:
+    inputs:
+      registry:
+        description: "The Docker registry to push to"
+        required: true
+        type: string
+      image-name:
+        description: "The name of the Docker image"
+        required: true
+        type: string
+      dockerfile:
+        description: "The path to the Dockerfile"
+        required: true
+        type: string
+    outputs:
+      image:
+        description: "The full image reference (registry/name:tag)"
+        value: ${{ jobs.get-tag.outputs.image }}
+    secrets:
+      token:
+        description: "GitHub token for authentication"
+        required: true
+
+jobs:
+  get-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      original-tag: ${{ steps.determine-tag.outputs.original-tag }}
+      final-tag: ${{ steps.determine-tag.outputs.final-tag }}
+      changed: ${{ steps.check-dockerfile.outputs.changed }}
+      image: ${{ steps.determine-tag.outputs.image }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Need full history to find merge-base with main
+          fetch-depth: 0
+
+      - name: Get base commit SHA
+        id: base-commit
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            # On push to main, use the parent commit SHA
+            BASE_SHA=$(git rev-parse HEAD^)
+            IS_MAIN_PUSH=true
+            echo "Push to main - base commit: $BASE_SHA"
+          else
+            # On PR/feature branch, find the merge-base with main
+            BASE_SHA=$(git merge-base origin/main HEAD)
+            IS_MAIN_PUSH=false
+            echo "Feature branch - merge-base with main: $BASE_SHA"
+          fi
+          
+          echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "is-main-push=$IS_MAIN_PUSH" >> "$GITHUB_OUTPUT"
+
+      - name: Check if Dockerfile changed
+        id: check-dockerfile
+        run: |
+          BASE_SHA="${{ steps.base-commit.outputs.sha }}"
+          
+          if git diff --name-only "$BASE_SHA" HEAD | grep -q "^${{ inputs.dockerfile }}$"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Dockerfile changed since $BASE_SHA"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Dockerfile unchanged since $BASE_SHA"
+          fi
+
+      - name: Determine image tag
+        id: determine-tag
+        run: |
+          if [ "${{ steps.check-dockerfile.outputs.changed }}" == "true" ]; then
+            # If it's a push to main and Dockerfile changed, use 'latest'
+            if [ "${{ steps.base-commit.outputs.is-main-push }}" == "true" ]; then
+              ORIGINAL_TAG="${{ github.sha }}"
+              FINAL_TAG="latest"
+              echo "Push to main with Dockerfile change - using 'latest'"
+            else
+              # Pull request or feature branch with Dockerfile change - use current commit SHA
+              ORIGINAL_TAG="${{ github.sha }}"
+              FINAL_TAG="${{ github.sha }}"
+              echo "Feature branch with Dockerfile change - using commit SHA as tag"
+            fi
+          else
+            # Dockerfile unchanged - use 'latest'
+            ORIGINAL_TAG="latest"
+            FINAL_TAG="latest"
+            echo "Dockerfile unchanged - using 'latest'"
+          fi
+          
+          echo "final-tag=$FINAL_TAG" >> "$GITHUB_OUTPUT"
+          echo "original-tag=$ORIGINAL_TAG" >> "$GITHUB_OUTPUT"
+          echo "image=${{ inputs.registry }}/${{ inputs.image-name }}:$FINAL_TAG" >> "$GITHUB_OUTPUT"
+
+  retag-to-latest:
+    needs: get-tag
+    if: needs.get-tag.outputs.original-tag != needs.get-tag.outputs.final-tag && needs.get-tag.outputs.final-tag == 'latest'
+    uses: ./.github/workflows/retag-image.yml
+    with:
+      registry: ${{ inputs.registry }}
+      image-name: ${{ inputs.image-name }}
+      source-tag: ${{ needs.get-tag.outputs.original-tag }}
+      target-tag: latest
+    secrets:
+      token: ${{ secrets.token }}
+
+  build-image:
+    needs: get-tag
+    if: needs.get-tag.outputs.final-tag != 'latest'
+    uses: ./.github/workflows/build-image.yml
+    with:
+      registry: ${{ inputs.registry }}
+      image-name: ${{ inputs.image-name }}
+      image-tag: ${{ needs.get-tag.outputs.final-tag }}
+      dockerfile: ${{ inputs.dockerfile }}
+    secrets:
+      token: ${{ secrets.token }}
