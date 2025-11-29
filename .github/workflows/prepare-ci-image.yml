@@ -30,7 +30,8 @@ jobs:
     outputs:
       original-tag: ${{ steps.determine-tag.outputs.original-tag }}
       final-tag: ${{ steps.determine-tag.outputs.final-tag }}
-      changed: ${{ steps.check-dockerfile.outputs.changed }}
+      should-build: ${{ steps.determine-tag.outputs.should-build }}
+      should-retag: ${{ steps.determine-tag.outputs.should-retag }}
       image: ${{ steps.determine-tag.outputs.image }}
     steps:
       - uses: actions/checkout@v6
@@ -41,18 +42,16 @@ jobs:
       - name: Get base commit SHA
         id: base-commit
         run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            # On push to main, use the parent commit SHA
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            # On main: HEAD^ is an ancestor of main (meaning HEAD is on main or was fast-forwarded)
             BASE_SHA=$(git rev-parse HEAD^)
             IS_MAIN_PUSH=true
-            echo "Push to main - base commit: $BASE_SHA"
           else
-            # On PR/feature branch, find the merge-base with main
+            # On feature branch: Diverged, find common ancestor
             BASE_SHA=$(git merge-base origin/main HEAD)
             IS_MAIN_PUSH=false
-            echo "Feature branch - merge-base with main: $BASE_SHA"
           fi
-          
+
           echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
           echo "is-main-push=$IS_MAIN_PUSH" >> "$GITHUB_OUTPUT"
 
@@ -72,32 +71,37 @@ jobs:
       - name: Determine image tag
         id: determine-tag
         run: |
+          SHOULD_BUILD="false"
+          SHOULD_RETAG="false"
+          ORIGINAL_TAG="latest"
+          FINAL_TAG="latest"
+
           if [ "${{ steps.check-dockerfile.outputs.changed }}" == "true" ]; then
             # If it's a push to main and Dockerfile changed, use 'latest'
             if [ "${{ steps.base-commit.outputs.is-main-push }}" == "true" ]; then
-              ORIGINAL_TAG="${{ github.sha }}"
-              FINAL_TAG="latest"
+              ORIGINAL_TAG="${{ steps.base-commit.outputs.sha }}"
+              SHOULD_RETAG="true"
               echo "Push to main with Dockerfile change - using 'latest'"
             else
-              # Pull request or feature branch with Dockerfile change - use current commit SHA
-              ORIGINAL_TAG="${{ github.sha }}"
-              FINAL_TAG="${{ github.sha }}"
+              # Pull request or feature branch with Dockerfile change
+              ORIGINAL_TAG="${{ steps.base-commit.outputs.sha }}"
+              FINAL_TAG="${{ steps.base-commit.outputs.sha }}"
+              SHOULD_BUILD="true"
               echo "Feature branch with Dockerfile change - using commit SHA as tag"
             fi
           else
-            # Dockerfile unchanged - use 'latest'
-            ORIGINAL_TAG="latest"
-            FINAL_TAG="latest"
             echo "Dockerfile unchanged - using 'latest'"
           fi
           
           echo "final-tag=$FINAL_TAG" >> "$GITHUB_OUTPUT"
           echo "original-tag=$ORIGINAL_TAG" >> "$GITHUB_OUTPUT"
           echo "image=${{ inputs.registry }}/${{ inputs.image-name }}:$FINAL_TAG" >> "$GITHUB_OUTPUT"
+          echo "should-build=$SHOULD_BUILD" >> "$GITHUB_OUTPUT"
+          echo "should-retag=$SHOULD_RETAG" >> "$GITHUB_OUTPUT"
 
   retag-to-latest:
     needs: get-tag
-    if: needs.get-tag.outputs.original-tag != needs.get-tag.outputs.final-tag && needs.get-tag.outputs.final-tag == 'latest'
+    if: needs.get-tag.outputs.should-retag == 'true'
     uses: ./.github/workflows/retag-image.yml
     with:
       registry: ${{ inputs.registry }}
@@ -109,7 +113,7 @@ jobs:
 
   build-image:
     needs: get-tag
-    if: needs.get-tag.outputs.final-tag != 'latest'
+    if: needs.get-tag.outputs.should-build == 'true'
     uses: ./.github/workflows/build-image.yml
     with:
       registry: ${{ inputs.registry }}

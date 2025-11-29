@@ -24,5 +24,4 @@ USER ${USER}
 RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/v1.10.20/install-from-binstall-release.sh | bash && \
     cargo binstall --no-confirm \
     cargo-llvm-cov@0.6.15 \
-    cargo-deny@0.18.6 \
-    just@1.43.1
+    cargo-deny@0.18.6
