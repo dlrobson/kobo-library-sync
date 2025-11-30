@@ -17,7 +17,7 @@ RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && locale-gen && \
 
 # Install components first to only download these for the default toolchain
 RUN rustup component add clippy rust-analyzer rustfmt && \
-    rustup toolchain install nightly --profile minimal --component rustfmt
+    rustup toolchain install nightly --profile minimal --component rustfmt llvm-tools-preview
 
 USER ${USER}
 
