@@ -12,11 +12,11 @@ env:
   RUST_LOG: debug
   RUST_BACKTRACE: full
 
-# This stops any running jobs when a new commit is pushed
-# Reference: https://stackoverflow.com/a/72408109
+# This creates a sequential queue for 'main' (by having a static group name) 
+# and cancels in-progress runs for just feature branches/PRs.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   prepare-ci-image:
