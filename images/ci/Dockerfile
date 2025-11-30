@@ -1,4 +1,4 @@
-FROM rust:1.91.1-trixie
+FROM rust:1.91.1-slim-trixie
 
 ARG USER=user
 ENV USER=${USER}
@@ -6,18 +6,17 @@ ENV USER=${USER}
 RUN apt-get update && \
     apt-get install -y \
     # CI dependencies
-    git \
+    curl git \
     # Devcontainer packages
     sudo locales && \
-    rm -rf /var/lib/apt/lists/* 
+    apt-get clean && rm -rf /var/lib/apt/lists/*
     
-RUN useradd --create-home --shell /bin/bash ${USER} && \
+RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && locale-gen && \
+    useradd --create-home --shell /bin/bash ${USER} && \
     echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
 
-RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && locale-gen
-
-RUN rustup toolchain install nightly && \
-    rustup component add rustfmt --toolchain nightly
+RUN rustup toolchain install nightly --profile minimal --component rustfmt && \
+    rustup component add clippy rust-analyzer rustfmt
 
 USER ${USER}
 
