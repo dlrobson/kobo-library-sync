@@ -15,6 +15,18 @@
                 "channel\\s*=\\s*\"(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\""
             ],
             "packageNameTemplate": "rust-lang/rust"
+        },
+        {
+            "customType": "regex",
+            "datasourceTemplate": "github-tags",
+            "depNameTemplate": "cargo-bins/cargo-binstall",
+            "managerFilePatterns": [
+                "(^|/)Dockerfile$"
+            ],
+            "matchStrings": [
+                "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/v(?<currentValue>.*?)/install-from-binstall-release.sh"
+            ],
+            "packageNameTemplate": "cargo-bins/cargo-binstall"
         }
     ],
     "extends": [
@@ -28,6 +40,15 @@
             ],
             "matchManagers": [
                 "custom.regex"
+            ]
+        },
+        {
+            "extractVersion": "^v(?<version>.*)$",
+            "matchDatasources": [
+                "github-releases"
+            ],
+            "matchPackageNames": [
+                "cargo-bins/cargo-binstall"
             ]
         }
     ],
