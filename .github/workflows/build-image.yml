@@ -15,8 +15,8 @@ on:
         description: "The tag for the Docker image"
         required: true
         type: string
-      dockerfile:
-        description: "The path to the Dockerfile"
+      dockerfile-context:
+        description: "The context path for the Dockerfile"
         required: true
         type: string
     secrets:
@@ -51,8 +51,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ${{ inputs.dockerfile }}
+          context: ${{ inputs.dockerfile-context }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
