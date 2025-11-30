@@ -43,7 +43,7 @@
             ]
         },
         {
-            "extractVersion": "^v(?<version>.*)$",
+            "commitMessageTopic": "cargo-binstall",
             "matchDatasources": [
                 "github-releases"
             ],
