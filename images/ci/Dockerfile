@@ -6,7 +6,7 @@ ENV USER=${USER}
 RUN apt-get update && \
     apt-get install -y \
     # CI dependencies
-    curl git \
+    curl git jq \
     # Development packages
     sudo locales && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -21,6 +21,6 @@ RUN rustup component add clippy rust-analyzer rustfmt && \
 
 USER ${USER}
 
-COPY binstall-versions.txt /tmp/binstall-versions.txt
+COPY binstall-versions.json /tmp/binstall-versions.json
 RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/v1.16.2/install-from-binstall-release.sh | bash && \
-    cargo binstall --no-confirm $(cat /tmp/binstall-versions.txt)
+    cargo binstall --no-confirm $(jq -r '.[] | "\(.crate)@\(.version)"' /tmp/binstall-versions.json)

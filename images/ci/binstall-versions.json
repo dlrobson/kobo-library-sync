@@ -1,0 +1,12 @@
+[
+    {
+        "repo": "taiki-e/cargo-llvm-cov",
+        "crate": "cargo-llvm-cov",
+        "version": "0.6.15"
+    },
+    {
+        "repo": "EmbarkStudios/cargo-deny",
+        "crate": "cargo-deny",
+        "version": "0.18.5"
+    }
+]
