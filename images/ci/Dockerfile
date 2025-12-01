@@ -8,7 +8,7 @@ RUN apt-get update && \
     # CI dependencies
     curl git jq \
     # Development packages
-    sudo locales && \
+    locales procps sudo && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
     
 RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && locale-gen && \
