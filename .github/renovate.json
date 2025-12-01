@@ -27,6 +27,17 @@
                 "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/v(?<currentValue>.*?)/install-from-binstall-release.sh"
             ],
             "packageNameTemplate": "cargo-bins/cargo-binstall"
+        },
+        {
+            "customType": "jsonata",
+            "fileFormat": "json",
+            "datasourceTemplate": "github-releases",
+            "managerFilePatterns": [
+                "**/binstall-versions.json"
+            ],
+            "matchStrings": [
+                "$[*].{\"depName\": repo, \"currentValue\": version}"
+            ]
         }
     ],
     "extends": [
