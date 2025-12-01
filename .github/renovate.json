@@ -3,15 +3,6 @@
     "cargo": {
         "rangeStrategy": "bump"
     },
-    "customDatasources": {
-        "rust-nightly": {
-            "defaultRegistryUrlTemplate": "https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/rustfmt",
-            "format": "plain",
-            "transformTemplates": [
-                "{\"releases\": [{\"version\": $trim($)}]}"
-            ]
-        }
-    },
     "customManagers": [
         {
             "customType": "regex",
@@ -38,17 +29,6 @@
             "packageNameTemplate": "cargo-bins/cargo-binstall"
         },
         {
-            "customType": "regex",
-            "datasourceTemplate": "custom.rust-nightly",
-            "depNameTemplate": "rust-nightly",
-            "managerFilePatterns": [
-                "**/Dockerfile"
-            ],
-            "matchStrings": [
-                "nightly-(?<currentValue>\\d{4}-\\d{2}-\\d{2})"
-            ]
-        },
-        {
             "customType": "jsonata",
             "fileFormat": "json",
             "datasourceTemplate": "github-releases",
@@ -71,15 +51,6 @@
             ],
             "matchManagers": [
                 "custom.regex"
-            ]
-        },
-        {
-            "commitMessageTopic": "Rust nightly",
-            "matchDepNames": [
-                "rust-nightly"
-            ],
-            "schedule": [
-                "on sunday"
             ]
         },
         {
