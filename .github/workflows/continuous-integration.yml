@@ -32,12 +32,15 @@ jobs:
 
   workflow-initialization:
     runs-on: ubuntu-latest
-    if: always()
+    if: success() || failure()
     needs: prepare-ci-image
     steps:
-      - name: Print CI image info
+      - name: Check prepare-ci-image result
         run: |
-          echo "CI Image: ${{ needs.prepare-ci-image.outputs.image }}"
+          if [ "${{ needs.prepare-ci-image.result }}" != "success" ]; then
+            echo "prepare-ci-image failed (result: ${{ needs.prepare-ci-image.result }}). Failing workflow-initialization job explicitly."
+            exit 1
+          fi
 
   build:
     runs-on: ubuntu-latest
