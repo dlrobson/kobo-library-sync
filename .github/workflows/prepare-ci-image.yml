@@ -26,7 +26,7 @@ on:
 
 jobs:
   get-tag:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       original-tag: ${{ steps.determine-tag.outputs.original-tag }}
       final-tag: ${{ steps.determine-tag.outputs.final-tag }}
