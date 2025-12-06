@@ -29,22 +29,11 @@ jobs:
       dockerfile-context: images/ci/
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
-
-  workflow-initialization:
-    runs-on: ubuntu-latest
-    if: success() || failure()
-    needs: prepare-ci-image
-    steps:
-      - name: Check prepare-ci-image result
-        run: |
-          if [ "${{ needs.prepare-ci-image.result }}" != "success" ]; then
-            echo "prepare-ci-image failed (result: ${{ needs.prepare-ci-image.result }}). Failing workflow-initialization job explicitly."
-            exit 1
-          fi
+    continue-on-error: false
 
   build:
     runs-on: ubuntu-latest
-    needs: workflow-initialization
+    needs: prepare-ci-image
     container:
       image: ${{ needs.prepare-ci-image.outputs.image }}
       options: --user 0
@@ -63,7 +52,7 @@ jobs:
 
   quality-check:
     runs-on: ubuntu-latest
-    needs: workflow-initialization
+    needs: prepare-ci-image
     container:
       image: ${{ needs.prepare-ci-image.outputs.image }}
       options: --user 0
@@ -86,7 +75,7 @@ jobs:
 
   code-coverage:
     runs-on: ubuntu-latest
-    needs: workflow-initialization
+    needs: prepare-ci-image
     container:
       image: ${{ needs.prepare-ci-image.outputs.image }}
       options: --user 0
@@ -117,7 +106,7 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
-    needs: workflow-initialization
+    needs: prepare-ci-image
     container:
       image: ${{ needs.prepare-ci-image.outputs.image }}
       options: --user 0
