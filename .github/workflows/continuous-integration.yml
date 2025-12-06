@@ -29,13 +29,29 @@ jobs:
       dockerfile-context: images/ci/
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
-    continue-on-error: false
+
+  workflow-initialization:
+    runs-on: ubuntu-latest
+    if: success() || failure()
+    needs: prepare-ci-image
+    outputs:
+      image: ${{ needs.prepare-ci-image.outputs.image }}
+    steps:
+      - name: Check prepare-ci-image result
+        run: |
+          if [ "${{ needs.prepare-ci-image.result }}" != "success" ]; then
+            echo "prepare-ci-image failed (result: ${{ needs.prepare-ci-image.result }}). Failing workflow-initialization job explicitly."
+            exit 1
+          fi
+      - name: Set outputs
+        run: |
+          echo "image=${{ needs.prepare-ci-image.outputs.image }}" >> $GITHUB_OUTPUT
 
   build:
     runs-on: ubuntu-latest
-    needs: prepare-ci-image
+    needs: workflow-initialization
     container:
-      image: ${{ needs.prepare-ci-image.outputs.image }}
+      image: ${{ needs.workflow-initialization.outputs.image }}
       options: --user 0
     steps:
       - uses: actions/checkout@v6
@@ -52,9 +68,9 @@ jobs:
 
   quality-check:
     runs-on: ubuntu-latest
-    needs: prepare-ci-image
+    needs: workflow-initialization
     container:
-      image: ${{ needs.prepare-ci-image.outputs.image }}
+      image: ${{ needs.workflow-initialization.outputs.image }}
       options: --user 0
 
     steps:
@@ -75,9 +91,9 @@ jobs:
 
   code-coverage:
     runs-on: ubuntu-latest
-    needs: prepare-ci-image
+    needs: workflow-initialization
     container:
-      image: ${{ needs.prepare-ci-image.outputs.image }}
+      image: ${{ needs.workflow-initialization.outputs.image }}
       options: --user 0
     env:
       COVERAGE_DIR: /tmp/coverage
@@ -106,9 +122,9 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
-    needs: prepare-ci-image
+    needs: workflow-initialization
     container:
-      image: ${{ needs.prepare-ci-image.outputs.image }}
+      image: ${{ needs.workflow-initialization.outputs.image }}
       options: --user 0
     steps:
       - uses: actions/checkout@v6
@@ -136,4 +152,4 @@ jobs:
     needs: prepare-ci-image
     uses: ./.github/workflows/audit.yml
     with:
-      image: ${{ needs.prepare-ci-image.outputs.image }}
+      image: ${{ needs.workflow-initialization.outputs.image }}
