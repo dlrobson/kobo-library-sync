@@ -149,7 +149,7 @@ jobs:
           path: target/doc
 
   call-security-audit:
-    needs: prepare-ci-image
+    needs: workflow-initialization
     uses: ./.github/workflows/audit.yml
     with:
       image: ${{ needs.workflow-initialization.outputs.image }}
