@@ -31,7 +31,7 @@ jobs:
       token: ${{ secrets.GITHUB_TOKEN }}
 
   workflow-initialization:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: success() || failure()
     needs: prepare-ci-image
     outputs:
@@ -50,17 +50,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: workflow-initialization
-    container:
+    container: &build-container
       image: ${{ needs.workflow-initialization.outputs.image }}
       options: --user 0
     steps:
       - uses: actions/checkout@v6
-
-      - uses: actions/cache@v4
+      - &cache
+        uses: actions/cache@v4
         with:
           path: |
             target/
-          key: build-${{ hashFiles('Cargo.lock') }}
+          key: ${{ github.job }}-${{ hashFiles('Cargo.lock') }}
 
       - name: Run tests
         run: cargo test --locked
@@ -69,18 +69,11 @@ jobs:
   quality-check:
     runs-on: ubuntu-latest
     needs: workflow-initialization
-    container:
-      image: ${{ needs.workflow-initialization.outputs.image }}
-      options: --user 0
-
+    container: *build-container
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/cache@v4
-        with:
-          path: |
-            target/
-          key: quality-${{ hashFiles('Cargo.lock') }}
-        
+      - *cache
+
       - name: Check Rust formatting
         if: ${{ !cancelled() }}
         run: cargo +nightly fmt --check
@@ -92,19 +85,12 @@ jobs:
   code-coverage:
     runs-on: ubuntu-latest
     needs: workflow-initialization
-    container:
-      image: ${{ needs.workflow-initialization.outputs.image }}
-      options: --user 0
+    container: *build-container
     env:
       COVERAGE_DIR: /tmp/coverage
     steps:
       - uses: actions/checkout@v6
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            target/
-          key: coverage-${{ hashFiles('Cargo.lock') }}
+      - *cache
 
       - name: Generate code coverage
         run: |
@@ -123,17 +109,10 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     needs: workflow-initialization
-    container:
-      image: ${{ needs.workflow-initialization.outputs.image }}
-      options: --user 0
+    container: *build-container
     steps:
       - uses: actions/checkout@v6
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            target/
-          key: docs-${{ hashFiles('Cargo.lock') }}
+      - *cache
 
       - name: Generate docs
         if: ${{ !cancelled() }}
