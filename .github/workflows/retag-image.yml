@@ -26,7 +26,7 @@ on:
 
 jobs:
   retag:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     steps:
       - name: Log in to the Container registry
         uses: docker/login-action@v3
