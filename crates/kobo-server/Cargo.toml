@@ -27,7 +27,7 @@ hyper-util = { version = "0.1.19", features = ["client-legacy"] }
 tokio = { version = "1.48.0", features = ["rt-multi-thread", "signal"] }
 tokio-util = "0.7.17"
 tower = "0.5.2"
-tower-http = { version = "0.6.7", features = ["normalize-path"] }
+tower-http = { version = "0.6.8", features = ["normalize-path"] }
 tracing = "0.1.43"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 
