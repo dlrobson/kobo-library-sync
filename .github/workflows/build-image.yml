@@ -45,8 +45,14 @@ jobs:
           tags: |
             type=raw,value=${{ inputs.image-tag }}
 
+      - name: Print out labels and tags
+        run: |
+          echo "Labels: ${{ steps.meta.outputs.labels }}"
+          echo "Tags: ${{ steps.meta.outputs.tags }}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
