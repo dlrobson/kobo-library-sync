@@ -19,4 +19,4 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Run security audit
-        run: cargo deny check
+        run: just audit

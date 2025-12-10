@@ -1,6 +1,8 @@
-profile := "dev"
-coverage-html-directory := "/tmp/coverage"
+coverage-html-directory := ""
 coverage-threshold := "80"
+profile := "dev"
+
+_coverage-html-output-directory-argument := if coverage-html-directory != "" { "--output-dir=" + coverage-html-directory } else { "" }
 
 audit:
     cargo deny check
@@ -8,30 +10,22 @@ audit:
 build:
     cargo build --locked --profile {{profile}}
 
-clippy:
-    cargo clippy --locked --profile {{profile}} --workspace --all-targets --no-deps --all-features -- -D warnings
+clippy *ARGS:
+    cargo clippy --locked --profile {{profile}} --workspace --all-features --all-targets {{ARGS}} -- -D warnings
 
-clippy-fix:
-    cargo clippy --locked --profile {{profile}} --workspace --all-targets --no-deps --all-features --fix --allow-dirty -- -D warnings
+clippy-fix *ARGS: (clippy "--fix" "--allow-dirty" ARGS)
 
 coverage:
     cargo +nightly llvm-cov --all-features --workspace --locked --branch
-    cargo +nightly llvm-cov report --html --output-dir={{coverage-html-directory}}
-
-coverage-check: coverage
-    cargo +nightly llvm-cov report --fail-under-lines={{coverage-threshold}}
+    cargo +nightly llvm-cov report --html {{_coverage-html-output-directory-argument}} --fail-under-lines={{coverage-threshold}}
 
 doc $RUSTDOCFLAGS="-D warnings":
-    cargo doc --locked --lib --no-deps --all-features --document-private-items
+    cargo doc --locked --profile {{profile}} --lib --no-deps --all-features --document-private-items
 
-fmt:
-    cargo +nightly fmt
+fmt *ARGS:
+    cargo +nightly fmt {{ARGS}}
 
-fmt-check:
-    cargo +nightly fmt --check
+test *ARGS:
+    cargo test --locked --profile {{profile}} {{ARGS}}
 
-test:
-    cargo test --locked --profile {{profile}}
-
-unit-test:
-    cargo test --locked --profile {{profile}} --lib
+unit-test: (test "--lib")

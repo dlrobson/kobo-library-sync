@@ -78,7 +78,7 @@ jobs:
 
       - name: Check Rust formatting
         if: ${{ !cancelled() }}
-        run: just fmt-check
+        run: just fmt --check
 
       - name: Check for clippy warnings
         if: ${{ !cancelled() }}
@@ -95,7 +95,7 @@ jobs:
       - *cache
 
       - name: Generate code coverage
-        run: just coverage-html-directory=${{ env.COVERAGE_HTML_DIRECTORY }} coverage-check
+        run: just coverage-html-directory=${{ env.COVERAGE_HTML_DIRECTORY }} coverage
 
       - name: Upload coverage reports
         if: ${{ !cancelled() }}
