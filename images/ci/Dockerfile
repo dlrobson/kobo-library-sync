@@ -22,6 +22,6 @@ RUN rustup component add clippy rust-analyzer rustfmt && \
 USER ${USER}
 
 COPY --chown=${USER}:${USER} binstall-versions.json /tmp/binstall-versions.json
-RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/v1.16.3/install-from-binstall-release.sh | bash && \
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/v1.16.4/install-from-binstall-release.sh | bash && \
     cargo binstall --no-confirm $(jq -r '.[] | "\(.crate)@\(.version)"' /tmp/binstall-versions.json) && \
     rm /tmp/binstall-versions.json
