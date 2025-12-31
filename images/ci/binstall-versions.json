@@ -7,7 +7,7 @@
     {
         "crate": "cargo-llvm-cov",
         "repo": "taiki-e/cargo-llvm-cov",
-        "version": "0.6.21"
+        "version": "0.6.22"
     },
     {
         "crate": "just",
