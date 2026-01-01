@@ -32,5 +32,5 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 
 [dev-dependencies]
-reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls"] }
+reqwest = { version = "0.13.1", default-features = false, features = ["rustls-tls"] }
 tracing-test = "0.2.5"
