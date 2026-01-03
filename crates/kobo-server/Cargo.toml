@@ -24,7 +24,7 @@ http-body-util = "0.1.3"
 hyper = "1.8.1"
 hyper-rustls = { version = "0.27.7", default-features = false, features = ["http1", "http2", "rustls-native-certs", "ring"] }
 hyper-util = { version = "0.1.19", features = ["client-legacy"] }
-tokio = { version = "1.48.0", features = ["rt-multi-thread", "signal"] }
+tokio = { version = "1.49.0", features = ["rt-multi-thread", "signal"] }
 tokio-util = "0.7.17"
 tower = "0.5.2"
 tower-http = { version = "0.6.8", features = ["normalize-path"] }
