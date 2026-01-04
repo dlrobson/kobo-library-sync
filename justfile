@@ -4,8 +4,10 @@ profile := "dev"
 
 _coverage-html-output-directory-argument := if coverage-html-directory != "" { "--output-dir=" + coverage-html-directory } else { "" }
 
+default: audit build clippy fmt test
+
 audit:
-    cargo deny check
+    cargo deny --locked check
 
 build:
     cargo build --locked --profile {{profile}}

@@ -1,7 +1,6 @@
 [advisories]
-unmaintained = "workspace"
-ignore = [
-]
+unmaintained = "all"
+yanked = "deny"
 
 [bans]
 multiple-versions = "allow"
@@ -16,11 +15,12 @@ deny = [
 allow = [
     "Apache-2.0",
     "BSD-3-Clause",
-    "CDLA-Permissive-2.0",
     "ISC",
     "MIT",
+    "OpenSSL",
     "Unicode-3.0"
 ]
+unused-allowed-license = "deny"
 
 [sources]
 unknown-git = "deny"
