@@ -25,7 +25,7 @@ hyper = "1.8.1"
 hyper-rustls = { version = "0.27.7", default-features = false, features = ["aws-lc-rs", "http1", "http2", "rustls-native-certs"] }
 hyper-util = { version = "0.1.19", features = ["client-legacy"] }
 tokio = { version = "1.49.0", features = ["rt-multi-thread", "signal"] }
-tokio-util = "0.7.17"
+tokio-util = "0.7.18"
 tower = "0.5.2"
 tower-http = { version = "0.6.8", features = ["normalize-path"] }
 tracing = "0.1.44"
