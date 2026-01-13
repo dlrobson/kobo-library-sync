@@ -26,7 +26,7 @@ hyper-rustls = { version = "0.27.7", default-features = false, features = ["aws-
 hyper-util = { version = "0.1.19", features = ["client-legacy"] }
 tokio = { version = "1.49.0", features = ["rt-multi-thread", "signal"] }
 tokio-util = "0.7.18"
-tower = "0.5.2"
+tower = "0.5.3"
 tower-http = { version = "0.6.8", features = ["normalize-path"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
