@@ -1,4 +1,4 @@
-FROM rust:1.92.0-slim-trixie
+FROM rust:1.93.0-slim-trixie
 
 ARG USER=user
 ENV USER=${USER}
