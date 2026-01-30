@@ -5,7 +5,6 @@ pub use implementation::ServerState;
 mod implementation {
     use std::sync::Arc;
 
-    use anyhow::Result;
     use axum::body::Body;
     use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 
@@ -45,7 +44,7 @@ mod implementation {
         }
 
         /// Build the `ServerState`.
-        pub fn build(self) -> Result<ServerState> {
+        pub fn build(self) -> ServerState {
             let frontend_url = self.frontend_url;
 
             let client = if let Some(client) = self.client {
@@ -63,10 +62,10 @@ mod implementation {
                 client
             };
 
-            Ok(ServerState {
+            ServerState {
                 client,
                 frontend_url,
-            })
+            }
         }
     }
 }
@@ -77,18 +76,15 @@ mod tests {
 
     #[test]
     fn builder_sets_frontend_url() {
-        let state = ServerState::builder("https://example.test")
-            .build()
-            .unwrap();
+        let state = ServerState::builder("https://example.test").build();
+
         assert_eq!(state.frontend_url, "https://example.test");
     }
 
     #[test]
     fn builder_defaults_frontend_url() {
         // No implicit default anymore; test explicit usage
-        let state = ServerState::builder("http://localhost:1234")
-            .build()
-            .unwrap();
+        let state = ServerState::builder("http://localhost:1234").build();
         assert_eq!(state.frontend_url, "http://localhost:1234");
     }
 }

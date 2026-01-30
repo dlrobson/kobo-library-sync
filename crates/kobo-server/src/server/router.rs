@@ -58,8 +58,7 @@ mod tests {
         let stub = Arc::new(FakeKoboClient::new());
         let state = ServerState::builder("http://frontend.test")
             .client(stub.clone())
-            .build()
-            .unwrap();
+            .build();
         stub.enqueue_response(
             axum::http::Response::builder()
                 .status(200)
