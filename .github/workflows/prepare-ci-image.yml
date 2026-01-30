@@ -28,8 +28,7 @@ jobs:
   get-tag:
     runs-on: ubuntu-slim
     outputs:
-      original-tag: ${{ steps.determine-tag.outputs.original-tag }}
-      final-tag: ${{ steps.determine-tag.outputs.final-tag }}
+      tag: ${{ steps.determine-tag.outputs.tag }}
       should-build: ${{ steps.determine-tag.outputs.should-build }}
       should-retag: ${{ steps.determine-tag.outputs.should-retag }}
       image: ${{ steps.determine-tag.outputs.image }}
@@ -85,7 +84,6 @@ jobs:
           
           SHOULD_BUILD="false"
           SHOULD_RETAG="false"
-          FINAL_TAG="$CONTENT_HASH"
 
           if [ "$IMAGE_EXISTS" == "true" ]; then
             echo "Image with content hash $CONTENT_HASH already exists - reusing"
@@ -104,8 +102,8 @@ jobs:
             fi
           fi
           
-          echo "final-tag=$FINAL_TAG" >> "$GITHUB_OUTPUT"
-          echo "image=${{ inputs.registry }}/${{ inputs.image-name }}:$FINAL_TAG" >> "$GITHUB_OUTPUT"
+          echo "tag=$CONTENT_HASH" >> "$GITHUB_OUTPUT"
+          echo "image=${{ inputs.registry }}/${{ inputs.image-name }}:$CONTENT_HASH" >> "$GITHUB_OUTPUT"
           echo "should-build=$SHOULD_BUILD" >> "$GITHUB_OUTPUT"
           echo "should-retag=$SHOULD_RETAG" >> "$GITHUB_OUTPUT"
 
@@ -116,7 +114,7 @@ jobs:
     with:
       registry: ${{ inputs.registry }}
       image-name: ${{ inputs.image-name }}
-      source-tag: ${{ needs.get-tag.outputs.final-tag }}
+      source-tag: ${{ needs.get-tag.outputs.tag }}
       target-tag: latest
     secrets:
       token: ${{ secrets.token }}
@@ -128,7 +126,7 @@ jobs:
     with:
       registry: ${{ inputs.registry }}
       image-name: ${{ inputs.image-name }}
-      image-tag: ${{ needs.get-tag.outputs.final-tag }}
+      image-tag: ${{ needs.get-tag.outputs.tag }}
       dockerfile-context: ${{ inputs.dockerfile-context }}
     secrets:
       token: ${{ secrets.token }}
