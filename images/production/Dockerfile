@@ -6,11 +6,10 @@ RUN apt-get update && \
     curl jq && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
     
-RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/v1.17.4/install-from-binstall-release.sh | bash && \
-        cargo binstall --no-confirm $(jq -r '.[] | "\(.crate)@\(.version)"' images/production/binstall-versions.json)
-
 COPY . .
-RUN cargo about generate --config images/production/about.toml --output-file /tmp/licenses.html images/production/about.hbs
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/v1.17.4/install-from-binstall-release.sh | bash && \
+    cargo binstall --no-confirm $(jq -r '.[] | "\(.crate)@\(.version)"' images/production/binstall-versions.json) && \
+    cargo about generate --config images/production/about.toml --output-file /tmp/licenses.html images/production/about.hbs
     
 FROM rust:1.93.0-slim-trixie AS build-base
 
