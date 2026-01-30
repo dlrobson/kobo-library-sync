@@ -1,6 +1,8 @@
 coverage-html-directory := ""
 coverage-threshold := "80"
 profile := "dev"
+docker-image := file_name(justfile_directory())
+docker-tag := "local"
 
 _coverage-html-output-directory-argument := if coverage-html-directory != "" { "--output-dir=" + coverage-html-directory } else { "" }
 
@@ -20,6 +22,9 @@ clippy-fix *ARGS: (clippy "--fix" "--allow-dirty" ARGS)
 coverage:
     cargo +nightly llvm-cov --all-features --workspace --locked --branch
     cargo +nightly llvm-cov report --html {{_coverage-html-output-directory-argument}} --fail-under-lines={{coverage-threshold}}
+
+docker-build:
+    docker build -t {{docker-image}}:{{docker-tag}} -f images/production/Dockerfile .
 
 doc $RUSTDOCFLAGS="-D warnings":
     cargo doc --locked --profile {{profile}} --lib --no-deps --all-features --document-private-items
