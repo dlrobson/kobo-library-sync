@@ -15,7 +15,7 @@ COPY . .
 RUN cargo build --release && \
     cp $(find target/release -maxdepth 1 -type f -executable) /app/app
 
-FROM debian:13.2-slim
+FROM debian:13.3-slim
 COPY --from=build-base /app/app /app/app
 COPY --from=cargo-about-base /tmp/licenses.html /app/licenses.html
 
