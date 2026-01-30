@@ -135,7 +135,7 @@ jobs:
     with:
       registry: ghcr.io
       image-name: ${{ github.repository }}
-      image-tag: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'latest' || github.sha }}
+      image-tag: ${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || 'latest' }}
       dockerfile-context: images/production/
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
