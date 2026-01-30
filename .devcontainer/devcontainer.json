@@ -22,7 +22,10 @@
     // Create a `compose.override.yaml` file if it doesn't exist. This
     // stores user specific configuration settings that are not the same
     // for everyone.
-    "createOverrideFile": "touch -a .devcontainer/compose.override.yaml"
+    "createOverrideFile": "touch -a .devcontainer/compose.override.yaml",
+    // Extracts the docker group id from the host system and adds it to
+    // the .devcontainer/.env file so that the container can use it.
+    "setDockerGid": "echo \"DOCKER_GID=$(getent group docker | cut -d: -f3)\" >> .devcontainer/.env"
   },
   "name": "${localWorkspaceFolderBasename}",
   "service": "devcontainer",
