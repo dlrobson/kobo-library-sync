@@ -35,66 +35,76 @@ jobs:
       image: ${{ steps.determine-tag.outputs.image }}
     steps:
       - uses: actions/checkout@v6
-        with:
-          # Need full history to find merge-base with main
-          fetch-depth: 0
 
-      - name: Get base commit SHA
-        id: base-commit
+      - name: Compute content hash
+        id: content-hash
+        env:
+          FULL_HASH: ${{ hashFiles(format('{0}/**', inputs.dockerfile-context)) }}
+        run: |
+          # Truncate to 12 characters for shorter tags
+          CONTENT_HASH="${FULL_HASH:0:12}"
+          
+          echo "hash=$CONTENT_HASH" >> "$GITHUB_OUTPUT"
+          echo "Computed content hash: $CONTENT_HASH (from $FULL_HASH)"
+
+      - name: Check if on main branch
+        id: check-main
         run: |
           if [ "$GITHUB_REF" = "refs/heads/main" ]; then
-            # On main: HEAD^ is an ancestor of main (meaning HEAD is on main or was fast-forwarded)
-            BASE_SHA=$(git rev-parse HEAD^)
-            IS_MAIN_PUSH=true
+            echo "is-main-push=true" >> "$GITHUB_OUTPUT"
           else
-            # On feature branch: Diverged, find common ancestor
-            BASE_SHA=$(git merge-base origin/main HEAD)
-            IS_MAIN_PUSH=false
+            echo "is-main-push=false" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
-          echo "is-main-push=$IS_MAIN_PUSH" >> "$GITHUB_OUTPUT"
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.token }}
 
-      - name: Check if Dockerfile changed
-        id: check-dockerfile
+      - name: Check if image exists
+        id: check-image
         run: |
-          BASE_SHA="${{ steps.base-commit.outputs.sha }}"
+          IMAGE="${{ inputs.registry }}/${{ inputs.image-name }}:${{ steps.content-hash.outputs.hash }}"
           
-          if git diff --name-only "$BASE_SHA" HEAD | grep -q "^${{ inputs.dockerfile-context }}"; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Dockerfile changed since $BASE_SHA"
+          if docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Image already exists: $IMAGE"
           else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Dockerfile unchanged since $BASE_SHA"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Image does not exist: $IMAGE"
           fi
 
       - name: Determine image tag
         id: determine-tag
         run: |
+          CONTENT_HASH="${{ steps.content-hash.outputs.hash }}"
+          IMAGE_EXISTS="${{ steps.check-image.outputs.exists }}"
+          IS_MAIN_PUSH="${{ steps.check-main.outputs.is-main-push }}"
+          
           SHOULD_BUILD="false"
           SHOULD_RETAG="false"
-          ORIGINAL_TAG="latest"
-          FINAL_TAG="latest"
+          FINAL_TAG="$CONTENT_HASH"
 
-          if [ "${{ steps.check-dockerfile.outputs.changed }}" == "true" ]; then
-            # If it's a push to main and Dockerfile changed, use 'latest'
-            if [ "${{ steps.base-commit.outputs.is-main-push }}" == "true" ]; then
-              ORIGINAL_TAG="${{ steps.base-commit.outputs.sha }}"
+          if [ "$IMAGE_EXISTS" == "true" ]; then
+            echo "Image with content hash $CONTENT_HASH already exists - reusing"
+            # If on main, still retag to latest even if image exists
+            if [ "$IS_MAIN_PUSH" == "true" ]; then
               SHOULD_RETAG="true"
-              echo "Push to main with Dockerfile change - using 'latest'"
-            else
-              # Pull request or feature branch with Dockerfile change
-              ORIGINAL_TAG="${{ steps.base-commit.outputs.sha }}"
-              FINAL_TAG="${{ steps.base-commit.outputs.sha }}"
-              SHOULD_BUILD="true"
-              echo "Feature branch with Dockerfile change - using commit SHA as tag"
+              echo "Main branch push - will retag to latest"
             fi
           else
-            echo "Dockerfile unchanged - using 'latest'"
+            echo "Image with content hash $CONTENT_HASH does not exist - building"
+            SHOULD_BUILD="true"
+            # If on main, also retag to latest after building
+            if [ "$IS_MAIN_PUSH" == "true" ]; then
+              SHOULD_RETAG="true"
+              echo "Main branch push - will also retag to latest"
+            fi
           fi
           
           echo "final-tag=$FINAL_TAG" >> "$GITHUB_OUTPUT"
-          echo "original-tag=$ORIGINAL_TAG" >> "$GITHUB_OUTPUT"
           echo "image=${{ inputs.registry }}/${{ inputs.image-name }}:$FINAL_TAG" >> "$GITHUB_OUTPUT"
           echo "should-build=$SHOULD_BUILD" >> "$GITHUB_OUTPUT"
           echo "should-retag=$SHOULD_RETAG" >> "$GITHUB_OUTPUT"
@@ -106,7 +116,7 @@ jobs:
     with:
       registry: ${{ inputs.registry }}
       image-name: ${{ inputs.image-name }}
-      source-tag: ${{ needs.get-tag.outputs.original-tag }}
+      source-tag: ${{ needs.get-tag.outputs.final-tag }}
       target-tag: latest
     secrets:
       token: ${{ secrets.token }}
