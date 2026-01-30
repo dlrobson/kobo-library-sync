@@ -19,6 +19,10 @@ on:
         description: "The context path for the Dockerfile"
         required: true
         type: string
+      dockerfile:
+        description: "The path to the Dockerfile. If not provided, defaults to '{dockerfile-context}/Dockerfile'"
+        required: false
+        type: string
     secrets:
       token:
         description: "GitHub token for authentication"
@@ -52,6 +56,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.dockerfile-context }}
+          file: ${{ inputs.dockerfile || format('{0}/Dockerfile', inputs.dockerfile-context) }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

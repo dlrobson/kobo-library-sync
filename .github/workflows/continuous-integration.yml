@@ -126,6 +126,15 @@ jobs:
     with:
       image: ${{ needs.workflow-initialization.outputs.image }}
 
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: workflow-initialization
+    container: *build-container
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build production Docker image
+        run: just docker-build
+
   build-production-image:
     needs: workflow-initialization
     permissions:
@@ -135,6 +144,7 @@ jobs:
       registry: ghcr.io
       image-name: ${{ github.repository }}
       image-tag: ${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || 'latest' }}
-      dockerfile-context: images/production/
+      dockerfile-context: .
+      dockerfile: images/production/Dockerfile
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}

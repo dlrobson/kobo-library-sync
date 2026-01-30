@@ -7,6 +7,13 @@
       ]
     }
   },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "dockerDashComposeVersion": "none",
+      "installDockerComposeSwitch": false,
+      "moby": false
+    }
+  },
   "dockerComposeFile": [
     "compose.yaml",
     "compose.override.yaml"
